@@ -1,27 +1,48 @@
 module.exports = {
-    "env": {
-        "node": true
-    },
-    "extends": "eslint:recommended",
-    "parserOptions": {
-        "ecmaVersion": 5
-    },
-    "rules": {
-        "indent": [
-            "error",
-            "tab"
-        ],
-        "linebreak-style": [
-            "error",
-            "unix"
-        ],
-        "no-console": "off",
-        "no-constant-condition": "off",
-        "no-control-regex": "off",
-        "quotes": "off",
-        "semi": [
-            "error",
-            "always"
-        ]
-    }
+	'extends': 'eslint:recommended',
+	'env': {
+		'node': true,
+		'es6': true,
+	},
+	'parserOptions': {
+		'ecmaVersion': 2022,
+	},
+	'rules': {
+		'arrow-spacing': ['warn', { 'before': true, 'after': true }],
+		'comma-dangle': ['error', 'always-multiline'],
+		'comma-spacing': 'error',
+		'comma-style': 'error',
+		'curly': ['error', 'multi-line', 'consistent'],
+		'dot-location': ['error', 'property'],
+		'handle-callback-err': 'off',
+		'indent': ['warn', 'tab', { 'MemberExpression': 0 }],
+		'keyword-spacing': 'warn',
+		'max-nested-callbacks': ['error', { 'max': 4 }],
+		'max-statements-per-line': ['error', { 'max': 2 }],
+		'no-console': 'off',
+		'no-empty-function': 'error',
+		'no-floating-decimal': 'error',
+		'no-lonely-if': 'error',
+		'no-multi-spaces': 'warn',
+		'no-multiple-empty-lines': ['warn', { 'max': 3, 'maxEOF': 1, 'maxBOF': 0 }],
+		'no-shadow': ['error', { 'allow': ['err', 'resolve', 'reject'] }],
+		'no-trailing-spaces': ['warn'],
+		'no-var': 'error',
+		'object-curly-spacing': ['error', 'always'],
+		'prefer-const': 'error',
+		'quotes': ['warn', 'single'],
+		'semi': ['warn', 'always'],
+		'space-before-blocks': 'error',
+		'space-before-function-paren': ['error', { 'anonymous': 'never', 'named': 'never', 'asyncArrow': 'always' }],
+		'space-in-parens': 'error',
+		'space-infix-ops': 'error',
+		'space-unary-ops': 'error',
+		'spaced-comment': 'warn',
+		'yoda': 'error',
+		'no-use-before-define': ['error', { 'functions': false, 'classes': true }],
+		'no-unused-vars': 'warn',
+		'wrap-regex': 'error',
+		'sort-vars': 'warn',
+		'no-unreachable': 'warn',
+	},
 };

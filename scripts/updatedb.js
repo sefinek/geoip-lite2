@@ -182,6 +182,7 @@ function check(database, cb) {
 			var status = response.statusCode;
     
 			if (status !== 200) {
+				console.log(chalk.red('ERROR') + response.data);
 				console.log(chalk.red('ERROR') + ': HTTP Request Failed [%d %s]', status, http.STATUS_CODES[status]);
 				client.abort();
 				process.exit();
