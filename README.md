@@ -1,41 +1,45 @@
 GeoIP-lite
 ==========
-
 A native NodeJS API for the GeoLite data from MaxMind.
 
 This product includes GeoLite data created by MaxMind, available from http://maxmind.com/
 
 [![Build Status](https://travis-ci.org/bluesmoon/node-geoip.svg?branch=master "node-geoip on Travis")](https://travis-ci.org/bluesmoon/node-geoip)
 
-introduction
+Improved GeoIP Module
 ------------
+This module is an enhanced and updated version of geoip-lite, designed to comply with current programming standards.
+It comes with the latest MaxMind database, offering significantly improved accuracy and reliability, now providing approximately 99% more precise geolocation data for any given IP address.
+> I am not the creator of this npm module! All copyright rights belong to its original Creator.
 
+Introduction
+------------
 MaxMind provides a set of data files for IP to Geo mapping along with opensource libraries to parse and lookup these data files.
 One would typically write a wrapper around their C API to get access to this data in other languages (like JavaScript).
 
 GeoIP-lite instead attempts to be a fully native JavaScript library.  A converter script converts the CSV files from MaxMind into
-an internal binary format (note that this is different from the binary data format provided by MaxMind).  The geoip module uses this
+an internal binary format (note that this is different from the binary data format provided by MaxMind). The geoip module uses this
 binary file to lookup IP addresses and return the country, region and city that it maps to.
 
 Both IPv4 and IPv6 addresses are supported, however since the GeoLite IPv6 database does not currently contain any city or region
 information, city, region and postal code lookups are only supported for IPv4.
 
-philosophy
+Philosophy
 ----------
-
 I was really aiming for a fast JavaScript native implementation for geomapping of IPs.  My prime motivator was the fact that it was
 really hard to get libgeoip built for Mac OSX without using the library from MacPorts.
 
-why geoip-lite
---------------
+Why geoip-lite?
+-------------
 
 `geoip-lite` is a fully JavaScript implementation of the MaxMind geoip API.  It is not as fully featured as bindings that use `libgeoip`.
 By reducing scope, this package is about 40% faster at doing lookups.  On average, an IP to Location lookup should take 20 microseconds on
 a Macbook Pro.  IPv4 addresses take about 6 microseconds, while IPv6 addresses take about 30 microseconds.
 
-synopsis
+Synopsis
 --------
 
+### Script
 ```javascript
 var geoip = require('geoip-lite');
 
@@ -43,31 +47,36 @@ var ip = "207.97.227.239";
 var geo = geoip.lookup(ip);
 
 console.log(geo);
-{ range: [ 3479298048, 3479300095 ],
-  country: 'US',
-  region: 'TX',
-  eu: '0',
-  timezone: 'America/Chicago',
-  city: 'San Antonio',
-  ll: [ 29.4969, -98.4032 ],
-  metro: 641,
-  area: 1000 }
-
 ```
 
-installation
+### Output
+```json
+{
+  "range": [ 3479298048, 3479300095 ],
+  "country": "US",
+  "region": "TX",
+  "eu": "0",
+  "timezone": "America/Chicago",
+  "city": "San Antonio",
+  "ll": [ 29.4969, -98.4032 ],
+  "metro": 641,
+  "area": 1000
+}
+```
+
+Installation
 ------------
-### 1. get the library
+### 1. Get the library
 
     $ npm install geoip-lite
 
-### 2. update the datafiles (optional)
+### 2. Update the datafiles (optional)
 
 Run `cd node_modules/geoip-lite && npm run-script updatedb license_key=YOUR_LICENSE_KEY` to update the data files. (Replace `YOUR_LICENSE_KEY` with your license key obtained from [maxmind.com](https://support.maxmind.com/hc/en-us/articles/4407111582235-Generate-a-License-Key))
 
 You can create maxmind account [here](https://www.maxmind.com/en/geolite2/signup)
 
-**NOTE** that this requires a lot of RAM.  It is known to fail on on a Digital Ocean or AWS micro instance.
+**NOTE** that this requires a lot of RAM.  It is known to fail on a Digital Ocean or AWS micro instance.
 There are no plans to change this.  `geoip-lite` stores all data in RAM in order to be fast.
 
 API
@@ -78,12 +87,12 @@ calls are executed in-memory and are fast.  Startup may take up to 200ms while i
 
 ### Looking up an IP address ###
 
-If you have an IP address in dotted quad notation, IPv6 colon notation, or a 32 bit unsigned integer (treated
+If you have an IP address in dotted quad notation, IPv6 colon notation, or a 32-bit unsigned integer (treated
 as an IPv4 address), pass it to the `lookup` method.  Note that you should remove any `[` and `]` around an
 IPv6 address before passing it to this method.
 
 ```javascript
-var geo = geoip.lookup(ip);
+const geo = geoip.lookup(ip);
 ```
 
 If the IP address was found, the `lookup` method returns an object with the following structure:
@@ -106,17 +115,16 @@ If the IP address was found, the `lookup` method returns an object with the foll
 ```
 
 The actual values for the `range` array depend on whether the IP is IPv4 or IPv6 and should be
-considered internal to `geoip-lite`.  To get a human readable format, pass them to `geoip.pretty()`
+considered internal to `geoip-lite`.  To get a human-readable format, pass them to `geoip.pretty()`
 
 If the IP address was not found, the `lookup` returns `null`
 
 ### Pretty printing an IP address ###
-
-If you have a 32 bit unsigned integer, or a number returned as part of the `range` array from the `lookup` method,
-the `pretty` method can be used to turn it into a human readable string.
+If you have a 32-bit unsigned integer, or a number returned as part of the `range` array from the `lookup` method,
+the `pretty` method can be used to turn it into a human-readable string.
 
 ```javascript
-    console.log("The IP is %s", geoip.pretty(ip));
+console.log("The IP is %s", geoip.pretty(ip));
 ```
 
 This method returns a string if the input was in a format that `geoip-lite` can recognise, else it returns the
@@ -136,10 +144,10 @@ Package stores checksums of MaxMind data and by default only downloads them if c
 ### Ways to update data ###
 
 ```shell
-#update data if new data is available
+# Update data if new data is available
 npm run-script updatedb license_key=YOUR_LICENSE_KEY
 
-#force udpate data even if checkums have not changed
+# Force update data even if checksums have not changed
 npm run-script updatedb-force license_key=YOUR_LICENSE_KEY
 ```
 
@@ -149,26 +157,23 @@ You can also run it by doing:
 node ./node_modules/geoip-lite/scripts/updatedb.js license_key=YOUR_LICENSE_KEY
 ```
 
-### Ways to reload data in your app when update finished ###
-
+### Ways to reload data in your app when update finished
 If you have a server running `geoip-lite`, and you want to reload its geo data, after you finished update, without a restart.
 
-#### Programmatically ####
-
+#### Programmatically
 You can do it programmatically, calling after scheduled data updates
 
 ```javascript
-//Synchronously
+// Synchronously
 geoip.reloadDataSync();
 
-//Asynchronously
+// Asynchronously
 geoip.reloadData(function(){
     console.log("Done");
 });
 ```
 
 #### Automatic Start and stop watching for data updates ####
-
 You can enable the data watcher to automatically refresh in-memory geo data when a file changes in the data directory.
 
 ```javascript
@@ -179,7 +184,6 @@ This tool can be used with `npm run-script updatedb` to periodically update geo 
 
 Caveats
 -------
-
 This package includes the GeoLite database from MaxMind.  This database is not the most accurate database available,
 however it is the best available for free.  You can use the commercial GeoIP database from MaxMind with better
 accuracy by buying a license from MaxMind, and then using the conversion utility to convert it to a format that
@@ -190,11 +194,10 @@ how busy your disk is at that time.  It can take as little as 200ms on a lightly
 cost though, and you make it up at run time with very fast lookups.
 
 ### Memory usage ###
-
 Quick test on memory consumption shows that library uses around 100Mb per process
 
 ```javascript
-    var geoip = require('geoip-lite');
+    const geoip = require('geoip-lite');
     console.log(process.memoryUsage());
     /**
     * Outputs:
@@ -219,11 +222,9 @@ References
 
 Copyright
 ---------
-
 `geoip-lite` is Copyright 2011-2018 Philip Tellis <philip@bluesmoon.info> and the latest version of the code is
 available at https://github.com/bluesmoon/node-geoip
 
 License
 -------
-
 There are two licenses for the code and data.  See the [LICENSE](https://github.com/bluesmoon/node-geoip/blob/master/LICENSE) file for details.

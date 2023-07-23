@@ -11,6 +11,7 @@ const https = require('https');
 const path = require('path');
 const url = require('url');
 const zlib = require('zlib');
+const AdmZip = require('adm-zip');
 
 fs.existsSync = fs.existsSync || path.existsSync;
 
@@ -19,7 +20,6 @@ const chalk = require('chalk');
 const iconv = require('iconv-lite');
 const lazy = require('lazy');
 const rimraf = require('rimraf').sync;
-const AdmZip = require('adm-zip');
 const utils = require('../lib/utils');
 const { Address6, Address4 } = require('ip-address');
 
@@ -47,38 +47,40 @@ if (typeof geodatadir !== 'undefined') {
 const tmpPath = path.resolve(__dirname, '..', 'tmp');
 const countryLookup = {};
 const cityLookup = {};
-const databases = [{
-	type: 'country',
-	url: 'https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-Country-CSV&suffix=zip&' + license_key,
-	checksum: 'https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-Country-CSV&suffix=zip.sha256&' + license_key,
-	fileName: 'GeoLite2-Country-CSV.zip',
-	src: [
-		'GeoLite2-Country-Locations-en.csv',
-		'GeoLite2-Country-Blocks-IPv4.csv',
-		'GeoLite2-Country-Blocks-IPv6.csv',
-	],
-	dest: [
-		'',
-		'geoip-country.dat',
-		'geoip-country6.dat',
-	],
-},
-{
-	type: 'city',
-	url: 'https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-City-CSV&suffix=zip&' + license_key,
-	checksum: 'https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-City-CSV&suffix=zip.sha256&' + license_key,
-	fileName: 'GeoLite2-City-CSV.zip',
-	src: [
-		'GeoLite2-City-Locations-en.csv',
-		'GeoLite2-City-Blocks-IPv4.csv',
-		'GeoLite2-City-Blocks-IPv6.csv',
-	],
-	dest: [
-		'geoip-city-names.dat',
-		'geoip-city.dat',
-		'geoip-city6.dat',
-	],
-}];
+const databases = [
+	{
+		type: 'country',
+		url: 'https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-Country-CSV&suffix=zip&' + license_key,
+		checksum: 'https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-Country-CSV&suffix=zip.sha256&' + license_key,
+		fileName: 'GeoLite2-Country-CSV.zip',
+		src: [
+			'GeoLite2-Country-Locations-en.csv',
+			'GeoLite2-Country-Blocks-IPv4.csv',
+			'GeoLite2-Country-Blocks-IPv6.csv',
+		],
+		dest: [
+			'',
+			'geoip-country.dat',
+			'geoip-country6.dat',
+		],
+	},
+	{
+		type: 'city',
+		url: 'https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-City-CSV&suffix=zip&' + license_key,
+		checksum: 'https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-City-CSV&suffix=zip.sha256&' + license_key,
+		fileName: 'GeoLite2-City-CSV.zip',
+		src: [
+			'GeoLite2-City-Locations-en.csv',
+			'GeoLite2-City-Blocks-IPv4.csv',
+			'GeoLite2-City-Blocks-IPv6.csv',
+		],
+		dest: [
+			'geoip-city-names.dat',
+			'geoip-city.dat',
+			'geoip-city6.dat',
+		],
+	},
+];
 
 function mkdir(dirName) {
 	const dir = path.dirname(dirName);
@@ -95,14 +97,14 @@ function try_fixing_line(line) {
 	let pos1 = 0;
 	let pos2 = -1;
 	// Escape quotes
-	line = line.replace(/""/, '\\"').replace(/'/g, '\\\'');
+	line = line.replace(/""/g, '\\"').replace(/'/g, '\\\'');
 
 	while (pos1 < line.length && pos2 < line.length) {
 		pos1 = pos2;
 		pos2 = line.indexOf(',', pos1 + 1);
 		if (pos2 < 0) pos2 = line.length;
-		if (line.indexOf('\'', (pos1 || 0)) > -1 && line.indexOf('\'', pos1) < pos2 && line[pos1 + 1] != '"' && line[pos2 - 1] != '"') {
-			line = line.substr(0, pos1 + 1) + '"' + line.substr(pos1 + 1, pos2 - pos1 - 1) + '"' + line.substr(pos2, line.length - pos2);
+		if (line.indexOf('\'', (pos1 || 0)) > -1 && line.indexOf('\'', pos1) < pos2 && line[pos1 + 1] !== '"' && line[pos2 - 1] !== '"') {
+			line = line.substring(0, pos1 + 1) + '"' + line.substring(pos1 + 1, pos2 - pos1 - 1) + '"' + line.substring(pos2, line.length);
 			pos2 = line.indexOf(',', pos2 + 1);
 			if (pos2 < 0) pos2 = line.length;
 		}
@@ -156,25 +158,27 @@ function getHTTPOptions(downloadUrl) {
 
 function check(database, cb) {
 	if (args.indexOf('force') !== -1) {
-		// We are forcing database upgrade,
-		// So not even using checksums
+		// we are forcing database upgrade,
+		// so not even using checksums
 		return cb(null, database);
 	}
 
 	const checksumUrl = database.checksum;
 
 	if (typeof checksumUrl === 'undefined') {
-		// No checksum url to check, skipping
+		// no checksum url to check, skipping
 		return cb(null, database);
 	}
 
-	// Read existing checksum file
+	// read existing checksum file
 	fs.readFile(path.join(dataPath, database.type + '.checksum'), { encoding: 'utf8' }, function(err, data) {
 		if (!err && data && data.length) {
 			database.checkValue = data;
 		}
 
 		console.log('Checking ', database.fileName);
+
+		const client = https.get(getHTTPOptions(checksumUrl), onResponse);
 
 		function onResponse(response) {
 			const status = response.statusCode;
@@ -193,7 +197,7 @@ function check(database, cb) {
 
 			response.on('end', function() {
 				if (str && str.length) {
-					if (str == database.checkValue) {
+					if (str === database.checkValue) {
 						console.log(chalk.green('Database "' + database.type + '" is up to date'));
 						database.skip = true;
 					}
@@ -211,29 +215,38 @@ function check(database, cb) {
 				cb(null, database);
 			});
 		}
-
-		var client = https.get(getHTTPOptions(checksumUrl), onResponse);
 	});
 }
 
 function fetch(database, cb) {
-	if (database.skip) return cb(null, null, null, database);
+
+	if (database.skip) {
+		return cb(null, null, null, database);
+	}
 
 	const downloadUrl = database.url;
 	let fileName = database.fileName;
 	const gzip = path.extname(fileName) === '.gz';
-	if (gzip) fileName = fileName.replace('.gz', '');
+
+	if (gzip) {
+		fileName = fileName.replace('.gz', '');
+	}
 
 	const tmpFile = path.join(tmpPath, fileName);
-	if (fs.existsSync(tmpFile)) return cb(null, tmpFile, fileName, database);
+
+	if (fs.existsSync(tmpFile)) {
+		return cb(null, tmpFile, fileName, database);
+	}
 
 	console.log('Fetching ', fileName);
+
+	const client = https.get(getHTTPOptions(downloadUrl), onResponse);
 
 	function onResponse(response) {
 		const status = response.statusCode;
 
 		if (status !== 200) {
-			console.error(chalk.red('ERROR') + ': HTTP Request Failed [%d %s]', status, http.STATUS_CODES[status]);
+			console.log(chalk.red('ERROR') + ': HTTP Request Failed [%d %s]', status, http.STATUS_CODES[status]);
 			client.abort();
 			process.exit();
 		}
@@ -255,8 +268,6 @@ function fetch(database, cb) {
 
 	mkdir(tmpFile);
 
-	var client = https.get(getHTTPOptions(downloadUrl), onResponse);
-
 	process.stdout.write('Retrieving ' + fileName + ' ...');
 }
 
@@ -273,10 +284,7 @@ function extract(tmpFile, tmpFileName, database, cb) {
 		const zipEntries = zip.getEntries();
 
 		zipEntries.forEach((entry) => {
-			if (entry.isDirectory) {
-				// Skip directory entries
-				return;
-			}
+			if (entry.isDirectory) return; // Skip directory entries
 
 			const filePath = entry.entryName.split('/');
 			const fileName = filePath[filePath.length - 1];
@@ -294,7 +302,7 @@ function processLookupCountry(src, cb) {
 	function processLine(line) {
 		const fields = CSVtoArray(line);
 		if (!fields || fields.length < 6) {
-			console.log('weird line: %s::', line);
+			console.log('processLookupCountry(): Weird line: %s::', line);
 			return;
 		}
 		countryLookup[fields[0]] = fields[4];
@@ -318,11 +326,16 @@ function processLookupCountry(src, cb) {
 
 function processCountryData(src, dest, cb) {
 	let lines = 0;
+
+	let tstart = Date.now();
+	const dataFile = path.join(dataPath, dest);
+	const datFile = fs.openSync(dataFile, 'w');
+
 	function processLine(line) {
 		const fields = CSVtoArray(line);
 
 		if (!fields || fields.length < 6) {
-			console.warn('weird line: %s::', line);
+			console.log('processCountryData(): Weird line: %s::', line);
 			return;
 		}
 		lines++;
@@ -374,15 +387,13 @@ function processCountryData(src, dest, cb) {
 		}
 	}
 
-	const dataFile = path.join(dataPath, dest);
 	const tmpDataFile = path.join(tmpPath, src);
 
 	rimraf(dataFile);
 	mkdir(dataFile);
 
 	process.stdout.write('Processing Data (may take a moment) ...');
-	var tstart = Date.now();
-	var datFile = fs.openSync(dataFile, 'w');
+
 
 	lazy(fs.createReadStream(tmpDataFile))
 	.lines
@@ -399,16 +410,16 @@ function processCountryData(src, dest, cb) {
 
 function processCityData(src, dest, cb) {
 	let lines = 0;
+	let tstart = Date.now();
+	const dataFile = path.join(dataPath, dest);
+	const datFile = fs.openSync(dataFile, 'w');
+
 	function processLine(line) {
-		if (line.match(/^Copyright/) || !line.match(/\d/)) {
-			return;
-		}
+		if (line.match(/^Copyright/) || !line.match(/\d/)) return;
 
 		const fields = CSVtoArray(line);
-		if (!fields) {
-			console.warn('weird line: %s::', line);
-			return;
-		}
+		if (!fields) return console.log('processCityData(): Weird line: %s::', line);
+
 		let sip;
 		let eip;
 		let rngip;
@@ -418,7 +429,6 @@ function processCityData(src, dest, cb) {
 		let lat;
 		let lon;
 		let area;
-
 		let i;
 
 		lines++;
@@ -483,14 +493,11 @@ function processCityData(src, dest, cb) {
 		}
 	}
 
-	const dataFile = path.join(dataPath, dest);
 	const tmpDataFile = path.join(tmpPath, src);
 
 	rimraf(dataFile);
 
 	process.stdout.write('Processing Data (may take a moment) ...');
-	var tstart = Date.now();
-	var datFile = fs.openSync(dataFile, 'w');
 
 	lazy(fs.createReadStream(tmpDataFile))
 	.lines
@@ -505,17 +512,21 @@ function processCityData(src, dest, cb) {
 function processCityDataNames(src, dest, cb) {
 	let locId = null;
 	let linesCount = 0;
+
+	const dataFile = path.join(dataPath, dest);
+	const datFile = fs.openSync(dataFile, 'w');
+
 	function processLine(line) {
 		if (line.match(/^Copyright/) || !line.match(/\d/)) {
 			return;
 		}
 
-		let b;
 		const sz = 88;
+		const b = Buffer.alloc(sz);
 		const fields = CSVtoArray(line);
 		if (!fields) {
-			// lot's of cities contain ` or ' in the name and can't be parsed correctly with current method
-			console.warn('weird line: %s::', line);
+			// Lots of cities contain ` or ' in the name and can't be parsed correctly with current method
+			console.log('processCityDataNames(): Weird line: %s::', line);
 			return;
 		}
 
@@ -526,32 +537,26 @@ function processCityDataNames(src, dest, cb) {
 		const rg = fields[6];
 		const city = fields[10];
 		const metro = parseInt(fields[11]);
-		// other possible fields to include
+		// Other possible fields to include
 		const tz = fields[12];
 		const eu = fields[13];
 
-		b = Buffer.alloc(sz);
 		b.fill(0);
-		b.write(cc, 0);// country code
-		b.write(rg, 2);// region
+		b.write(cc, 0); // Country code
+		b.write(rg, 2); // Region
 
-		if (metro) {
-			b.writeInt32BE(metro, 5);
-		}
-		b.write(eu, 9);// is in eu
-		b.write(tz, 10);// timezone
-		b.write(city, 42);// cityname
+		if (metro) b.writeInt32BE(metro, 5);
+		b.write(eu, 9); // Is in eu
+		b.write(tz, 10); // Timezone
+		b.write(city, 42); // City name
 
 		fs.writeSync(datFile, b, 0, b.length, null);
 		linesCount++;
 	}
 
-	const dataFile = path.join(dataPath, dest);
+
 	const tmpDataFile = path.join(tmpPath, src);
-
 	rimraf(dataFile);
-
-	var datFile = fs.openSync(dataFile, 'w');
 
 	lazy(fs.createReadStream(tmpDataFile))
 	.lines
@@ -564,9 +569,7 @@ function processCityDataNames(src, dest, cb) {
 }
 
 function processData(database, cb) {
-	if (database.skip) {
-		return cb(null, database);
-	}
+	if (database.skip) return cb(null, database);
 
 	const type = database.type;
 	const src = database.src;
@@ -601,10 +604,8 @@ function processData(database, cb) {
 }
 
 function updateChecksum(database, cb) {
-	if (database.skip || !database.checkValue) {
-		// don't need to update checksums cause it was not fetched or did not change
-		return cb();
-	}
+	if (database.skip || !database.checkValue) return cb(); // Don't need to update checksums cause it was not fetched or did not change
+
 	fs.writeFile(path.join(dataPath, database.type + '.checksum'), database.checkValue, 'utf8', function(err) {
 		if (err) console.log(chalk.red('Failed to Update checksums.'), 'Database:', database.type);
 		cb();
@@ -612,7 +613,7 @@ function updateChecksum(database, cb) {
 }
 
 if (!license_key) {
-	console.error(chalk.red('ERROR') + ': Missing license_key');
+	console.log(chalk.red('ERROR') + ': Missing license_key');
 	process.exit(1);
 }
 
@@ -623,14 +624,15 @@ async.eachSeries(databases, function(database, nextDatabase) {
 	async.seq(check, fetch, extract, processData, updateChecksum)(database, nextDatabase);
 }, function(err) {
 	if (err) {
-		console.error(chalk.red('Failed to Update Databases from MaxMind.'), err);
+		console.log(chalk.red('Failed to Update Databases from MaxMind.'), err);
 		process.exit(1);
 	} else {
 		console.log(chalk.green('Successfully Updated Databases from MaxMind.'));
 		if (args.indexOf('debug') !== -1) {
 			console.log(chalk.yellow.bold('Notice: temporary files are not deleted for debug purposes.'));
-		} else {
-			rimraf(tmpPath);
+		}
+		else {
+			// rimraf(tmpPath);
 		}
 		process.exit(0);
 	}
