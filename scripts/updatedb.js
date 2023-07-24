@@ -257,7 +257,7 @@ function fetch(database, cb) {
 
 	var client = https.get(getHTTPOptions(downloadUrl), onResponse);
 
-	process.stdout.write('Retrieving ' + fileName + ' ...');
+	process.stdout.write('Retrieving ' + fileName + '...');
 }
 
 function extract(tmpFile, tmpFileName, database, cb) {
@@ -268,7 +268,7 @@ function extract(tmpFile, tmpFileName, database, cb) {
 	if (path.extname(tmpFileName) !== '.zip') {
 		cb(null, database);
 	} else {
-		process.stdout.write('Extracting ' + tmpFileName + ' ...');
+		process.stdout.write('Extracting ' + tmpFileName + '...');
 		const zip = new AdmZip(tmpFile);
 		const zipEntries = zip.getEntries();
 
@@ -301,7 +301,7 @@ function processLookupCountry(src, cb) {
 	}
 	const tmpDataFile = path.join(tmpPath, src);
 
-	process.stdout.write('Processing Lookup Data (may take a moment) ...');
+	process.stdout.write('Processing Lookup Data (may take a moment)...');
 
 	lazy(fs.createReadStream(tmpDataFile))
 	.lines
@@ -369,7 +369,7 @@ function processCountryData(src, dest, cb) {
 			fs.writeSync(datFile, b, 0, bsz, null);
 			if (Date.now() - tstart > 5000) {
 				tstart = Date.now();
-				process.stdout.write('\nStill working (' + lines + ') ...');
+				process.stdout.write('\nStill working (' + lines + ')...');
 			}
 		}
 	}
@@ -380,7 +380,7 @@ function processCountryData(src, dest, cb) {
 	rimraf(dataFile);
 	mkdir(dataFile);
 
-	process.stdout.write('Processing Data (may take a moment) ...');
+	process.stdout.write('Processing data (may take a moment)...');
 	var tstart = Date.now();
 	var datFile = fs.openSync(dataFile, 'w');
 
@@ -479,7 +479,7 @@ function processCityData(src, dest, cb) {
 		fs.writeSync(datFile, b, 0, b.length, null);
 		if (Date.now() - tstart > 5000) {
 			tstart = Date.now();
-			process.stdout.write('\nStill working (' + lines + ') ...');
+			process.stdout.write('\nStill working (' + lines + ')...');
 		}
 	}
 
@@ -510,11 +510,10 @@ function processCityDataNames(src, dest, cb) {
 			return;
 		}
 
-		let b;
-		const sz = 88;
+		const b = Buffer.alloc(88);
 		const fields = CSVtoArray(line);
 		if (!fields) {
-			// lot's of cities contain ` or ' in the name and can't be parsed correctly with current method
+			// Lots of cities contain ` or ' in the name and can't be parsed correctly with current method
 			console.warn('weird line: %s::', line);
 			return;
 		}
@@ -526,21 +525,18 @@ function processCityDataNames(src, dest, cb) {
 		const rg = fields[6];
 		const city = fields[10];
 		const metro = parseInt(fields[11]);
-		// other possible fields to include
+		// Other possible fields to include
 		const tz = fields[12];
 		const eu = fields[13];
 
-		b = Buffer.alloc(sz);
 		b.fill(0);
-		b.write(cc, 0);// country code
-		b.write(rg, 2);// region
+		b.write(cc, 0); // Country code
+		b.write(rg, 2); // Region
 
-		if (metro) {
-			b.writeInt32BE(metro, 5);
-		}
-		b.write(eu, 9);// is in eu
-		b.write(tz, 10);// timezone
-		b.write(city, 42);// cityname
+		if (metro) b.writeInt32BE(metro, 5);
+		b.write(eu, 9); // Is in eu
+		b.write(tz, 10); // Timezone
+		b.write(city, 42); // City name
 
 		fs.writeSync(datFile, b, 0, b.length, null);
 		linesCount++;
