@@ -10,7 +10,9 @@
     "ipv6",
     "geolookup",
     "maxmind",
-    "geolite"
+    "geolite",
+    "geolite2",
+    "fast-geoip"
   ],
   "homepage": "https://github.com/sefinek24/geoip-lite2",
   "author": "Philip Tellis <philip@bluesmoon.info> (https://bluesmoon.info)",
