@@ -8,9 +8,9 @@ This product includes GeoLite data created by MaxMind, available from http://max
 
 Improved GeoIP Module
 ------------
-This module is an enhanced and updated version of geoip-lite, designed to comply with current programming standards.
+This module is an enhanced and updated version of [geoip-lite](https://github.com/geoip-lite/node-geoip), designed to comply with current programming standards.
 It comes with the latest MaxMind database, offering significantly improved accuracy and reliability, now providing approximately 99% more precise geolocation data for any given IP address.
-> I am not the creator of this npm module! All copyright rights belong to its original Creator.
+> I am not the creator of this npm module! All copyright rights belong to its original [Creators](https://github.com/geoip-lite/node-geoip/blob/main/AUTHORS).
 
 Introduction
 ------------
