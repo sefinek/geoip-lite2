@@ -30,7 +30,7 @@
   },
   "scripts": {
     "eslint": "eslint .",
-    "test": "mocha test/tests.js",
+    "test": "mocha test/main.js",
     "up": "ncu -u -x chalk && npm install && npm update && npm audit fix",
     "updatedb": "node scripts/updatedb.js",
     "updatedb-debug": "node scripts/updatedb.js debug",
