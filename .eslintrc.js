@@ -5,7 +5,7 @@ module.exports = {
 		'es6': true,
 	},
 	'parserOptions': {
-		'ecmaVersion': 2022,
+		'ecmaVersion': 2023,
 	},
 	'rules': {
 		'arrow-spacing': ['warn', { 'before': true, 'after': true }],
@@ -39,10 +39,5 @@ module.exports = {
 		'space-unary-ops': 'error',
 		'spaced-comment': 'warn',
 		'yoda': 'error',
-		'no-use-before-define': ['error', { 'functions': false, 'classes': true }],
-		'no-unused-vars': 'warn',
-		'wrap-regex': 'error',
-		'sort-vars': 'warn',
-		'no-unreachable': 'warn',
 	},
 };
