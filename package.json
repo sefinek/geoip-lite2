@@ -1,7 +1,7 @@
 {
   "name": "geoip-lite2",
-  "version": "1.4.8",
-  "description": "A light weight native JavaScript implementation of GeoIP API from MaxMind",
+  "version": "2.0.0",
+  "description": "A light weight native JavaScript implementation of GeoIP API from MaxMind.",
   "keywords": [
     "geo",
     "geoip",
@@ -13,7 +13,7 @@
     "geolite"
   ],
   "homepage": "https://github.com/sefinek24/geoip-lite2",
-  "author": "Philip Tellis <philip@bluesmoon.info> (http://bluesmoon.info/)",
+  "author": "Philip Tellis <philip@bluesmoon.info> (https://bluesmoon.info)",
   "files": [
     "lib/",
     "data/",
@@ -30,7 +30,7 @@
   },
   "scripts": {
     "eslint": "eslint .",
-    "test": "nodeunit --reporter=minimal test/tests.js",
+    "test": "mocha test/tests.js",
     "up": "ncu -u -x chalk && npm install && npm update && npm audit fix",
     "updatedb": "node scripts/updatedb.js",
     "updatedb-debug": "node scripts/updatedb.js debug",
@@ -50,7 +50,7 @@
   },
   "devDependencies": {
     "eslint": "^8.45.0",
-    "nodeunit": "^0.11.2"
+    "mocha": "^10.2.0"
   },
   "license": "Apache-2.0",
   "bugs": {
