@@ -51,7 +51,7 @@
     "update": true
   },
   "devDependencies": {
-    "eslint": "^8.45.0",
+    "eslint": "^8.46.0",
     "mocha": "^10.2.0"
   },
   "license": "Apache-2.0",
