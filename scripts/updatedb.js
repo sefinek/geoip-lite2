@@ -5,10 +5,10 @@
 const { name, version } = require('../package.json');
 const user_agent = `Mozilla/5.0 (compatible; ${name}/${version}; +https://sefinek.net)`;
 
-const fs = require('fs');
+const fs = require('node:fs');
 const http = require('http');
 const https = require('https');
-const path = require('path');
+const path = require('node:path');
 const url = require('url');
 const zlib = require('zlib');
 
@@ -20,7 +20,7 @@ const iconv = require('iconv-lite');
 const lazy = require('lazy');
 const rimraf = require('rimraf').sync;
 const AdmZip = require('adm-zip');
-const utils = require('../lib/utils');
+const utils = require('../lib/utils.js');
 const { Address6, Address4 } = require('ip-address');
 
 const args = process.argv.slice(2);
@@ -40,7 +40,7 @@ let dataPath = path.resolve(__dirname, '..', 'data');
 if (typeof geodatadir !== 'undefined') {
 	dataPath = path.resolve(process.cwd(), geodatadir.split('=')[1]);
 	if (!fs.existsSync(dataPath)) {
-		console.log(chalk.red('ERROR') + ': Directory does\'t exist: ' + dataPath);
+		console.log(chalk.red('ERROR') + ': Directory doesn\'t exist: ' + dataPath);
 		process.exit(1);
 	}
 }
@@ -62,8 +62,7 @@ const databases = [{
 		'geoip-country.dat',
 		'geoip-country6.dat',
 	],
-},
-{
+}, {
 	type: 'city',
 	url: 'https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-City-CSV&suffix=zip&' + license_key,
 	checksum: 'https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-City-CSV&suffix=zip.sha256&' + license_key,
@@ -82,9 +81,7 @@ const databases = [{
 
 function mkdir(dirName) {
 	const dir = path.dirname(dirName);
-	if (!fs.existsSync(dir)) {
-		fs.mkdirSync(dir);
-	}
+	if (!fs.existsSync(dir)) fs.mkdirSync(dir);
 }
 
 // Ref: http://stackoverflow.com/questions/8493195/how-can-i-parse-a-csv-string-with-javascript
@@ -142,7 +139,7 @@ function getHTTPOptions(downloadUrl) {
 
 	if (process.env.http_proxy || process.env.https_proxy) {
 		try {
-			const HttpsProxyAgent = require('https-proxy-agent');
+			const HttpsProxyAgent = require('node:https-proxy-agent');
 			options.agent = new HttpsProxyAgent(process.env.http_proxy || process.env.https_proxy);
 		}
 		catch (e) {
@@ -170,15 +167,12 @@ function check(database, cb) {
 
 	// Read existing checksum file
 	fs.readFile(path.join(dataPath, database.type + '.checksum'), { encoding: 'utf8' }, function(err, data) {
-		if (!err && data && data.length) {
-			database.checkValue = data;
-		}
+		if (!err && data && data.length) database.checkValue = data;
 
 		console.log('Checking ', database.fileName);
 
 		function onResponse(response) {
 			const status = response.statusCode;
-
 			if (status !== 200) {
 				console.log(chalk.red('ERROR') + response.data);
 				console.log(chalk.red('ERROR') + ': HTTP Request Failed [%d %s]', status, http.STATUS_CODES[status]);

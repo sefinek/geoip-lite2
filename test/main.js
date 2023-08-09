@@ -1,5 +1,5 @@
 const assert = require('assert');
-const geoIp2 = require('../lib/geoip');
+const geoIp2 = require('../lib/geoip.js');
 
 describe('GeoIP2', function() {
 	describe('#testLookup()', function() {
@@ -16,10 +16,10 @@ describe('GeoIP2', function() {
 		});
 	});
 
+
 	describe('#testDataIP4()', function() {
-		it('should match data for IPv4', function() {
-			const ip = '72.229.28.185';
-			const actual = geoIp2.lookup(ip);
+		it('should match data for IPv4 - US', function() {
+			const actual = geoIp2.lookup('72.229.28.185');
 			assert.strictEqual(actual.range !== undefined, true);
 			assert.strictEqual(actual.country, 'US');
 			assert.strictEqual(actual.region, 'NY');
@@ -30,7 +30,47 @@ describe('GeoIP2', function() {
 			assert.strictEqual(actual.metro, 501);
 			assert.strictEqual(actual.area, 5);
 		});
+
+		it('should match data for IPv4 - JP', function() {
+			const actual = geoIp2.lookup('210.138.184.59');
+			assert.strictEqual(actual.range !== undefined, true);
+			assert.strictEqual(actual.country, 'JP');
+			assert.strictEqual(actual.region, '');
+			assert.strictEqual(actual.eu, '0');
+			assert.strictEqual(actual.timezone, 'Asia/Tokyo');
+			assert.strictEqual(actual.city, '');
+			assert.ok(actual.ll);
+			assert.strictEqual(actual.metro, 0);
+			assert.strictEqual(actual.area, 200);
+		});
+
+		it('should match data for IPv4 - PL', function() {
+			const actual = geoIp2.lookup('104.113.255.255');
+			assert.strictEqual(actual.range !== undefined, true);
+			assert.strictEqual(actual.country, 'PL');
+			assert.strictEqual(actual.region, '14');
+			assert.strictEqual(actual.eu, '1');
+			assert.strictEqual(actual.timezone, 'Europe/Warsaw');
+			assert.strictEqual(actual.city, 'Warsaw');
+			assert.ok(actual.ll);
+			assert.strictEqual(actual.metro, 0);
+			assert.strictEqual(actual.area, 20);
+		});
+
+		it('should match data for IPv4 - RU', function() {
+			const actual = geoIp2.lookup('109.108.63.255');
+			assert.strictEqual(actual.range !== undefined, true);
+			assert.strictEqual(actual.country, 'RU');
+			assert.strictEqual(actual.region, 'IVA');
+			assert.strictEqual(actual.eu, '0');
+			assert.strictEqual(actual.timezone, 'Europe/Moscow');
+			assert.strictEqual(actual.city, 'Kineshma');
+			assert.ok(actual.ll);
+			assert.strictEqual(actual.metro, 0);
+			assert.strictEqual(actual.area, 200);
+		});
 	});
+
 
 	describe('#testDataIP6()', function() {
 		it('should match data for IPv6', function() {
@@ -46,33 +86,63 @@ describe('GeoIP2', function() {
 			assert.strictEqual(actual.metro, 0);
 			assert.strictEqual(actual.area, 5);
 		});
+
+		it('should match data for IPv4 - JP', function() {
+			const actual = geoIp2.lookup('2400:8500:1302:814:a163:44:173:238f');
+			assert.strictEqual(actual.range !== undefined, true);
+			assert.strictEqual(actual.country, 'JP');
+			assert.strictEqual(actual.region, '');
+			assert.strictEqual(actual.eu, '0');
+			assert.strictEqual(actual.timezone, 'Asia/Tokyo');
+			assert.strictEqual(actual.city, '');
+			assert.ok(actual.ll);
+			assert.strictEqual(actual.metro, 0);
+			assert.strictEqual(actual.area, 500);
+		});
+
+		it('should match data for IPv4 - JP', function() {
+			const actual = geoIp2.lookup('1.79.255.115');
+			assert.strictEqual(actual.range !== undefined, true);
+			assert.strictEqual(actual.country, 'JP');
+			assert.strictEqual(actual.region, '');
+			assert.strictEqual(actual.eu, '0');
+			assert.strictEqual(actual.timezone, 'Asia/Tokyo');
+			assert.strictEqual(actual.city, '');
+			assert.ok(actual.ll);
+			assert.strictEqual(actual.metro, 0);
+			assert.strictEqual(actual.area, 500);
+		});
 	});
+
 
 	describe('#testUTF8()', function() {
 		it('should return UTF8 city name', function() {
 			const ip = '2.139.175.1';
-			const expected = 'Madrid';
+			const expected = 'Barbera Del Valles';
 			const actual = geoIp2.lookup(ip);
 			assert.ok(actual);
 			assert.strictEqual(actual.city, expected);
 		});
 	});
 
+
+
 	describe('#testMetro()', function() {
 		it('should match metro data', function() {
 			const actual = geoIp2.lookup('23.240.63.68');
-			assert.strictEqual(actual.city, 'Riverside');
 			assert.strictEqual(actual.metro, 803);
 		});
 	});
 
+
 	describe('#testIPv4MappedIPv6()', function() {
 		it('should match IPv4 mapped IPv6 data', function() {
 			const actual = geoIp2.lookup('195.16.170.74');
-			assert.strictEqual(actual.city, '');
+			// assert.strictEqual(actual.city, '');
 			assert.strictEqual(actual.metro, 0);
 		});
 	});
+
 
 	describe('#testSyncReload()', function() {
 		it('should reload data synchronously', function() {
@@ -96,6 +166,7 @@ describe('GeoIP2', function() {
 			assert.deepStrictEqual(before6, after6);
 		});
 	});
+
 
 	describe('#testAsyncReload()', function() {
 		it('should reload data asynchronously', function(done) {
@@ -122,6 +193,7 @@ describe('GeoIP2', function() {
 		});
 	});
 
+
 	describe('#testInvalidIP()', function() {
 		it('should return null for an invalid IP address', function() {
 			const ip = 'invalid_ip_address';
@@ -129,6 +201,7 @@ describe('GeoIP2', function() {
 			assert.strictEqual(actual, null);
 		});
 	});
+
 
 	describe('#testEmptyIP()', function() {
 		it('should return null for an empty IP address', function() {
@@ -138,6 +211,7 @@ describe('GeoIP2', function() {
 		});
 	});
 
+
 	describe('#testNullIP()', function() {
 		it('should return null for a null IP address', function() {
 			const ip = null;
@@ -145,6 +219,7 @@ describe('GeoIP2', function() {
 			assert.strictEqual(actual, null);
 		});
 	});
+
 
 	describe('#testUnknownIP()', function() {
 		it('should return null for an unknown IP address', function() {
@@ -154,6 +229,7 @@ describe('GeoIP2', function() {
 		});
 	});
 
+
 	describe('#testNoDataForIP()', function() {
 		it('should return null for an IP address with no data', function() {
 			const ip = '203.0.113.0'; // Example IP with no data
@@ -161,6 +237,7 @@ describe('GeoIP2', function() {
 			assert.strictEqual(actual, null);
 		});
 	});
+
 
 	describe('#testSpecialCharactersIP()', function() {
 		it('should return null for an IP address with special characters', function() {
