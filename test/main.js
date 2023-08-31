@@ -35,10 +35,10 @@ describe('GeoIP2', function() {
 			const actual = geoIp2.lookup('210.138.184.59');
 			assert.strictEqual(actual.range !== undefined, true);
 			assert.strictEqual(actual.country, 'JP');
-			assert.strictEqual(actual.region, '');
+			assert.strictEqual(actual.region, '13');
 			assert.strictEqual(actual.eu, '0');
 			assert.strictEqual(actual.timezone, 'Asia/Tokyo');
-			assert.strictEqual(actual.city, '');
+			assert.strictEqual(actual.city, 'Chiyoda-ku');
 			assert.ok(actual.ll);
 			assert.strictEqual(actual.metro, 0);
 			assert.strictEqual(actual.area, 200);
