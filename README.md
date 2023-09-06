@@ -14,6 +14,8 @@ This module is an improved and updated edition of [geoip-lite](https://github.co
 All components have undergone meticulous updates to ensure peak performance and functionality.
 Notably, it is now powered by the most up-to-date MaxMind database, offering significantly enhanced accuracy and reliability. This translates to approximately 40% more precise geolocation data for any IP address, compared to the previous version which relied on a database from 2019.
 
+Now this module operates even faster because its files have been minified!
+
 Furthermore, the testing process has been improved by adopting the testing library Mocha.
 This change enhances testing and contributes to the overall reliability of the module.
 
