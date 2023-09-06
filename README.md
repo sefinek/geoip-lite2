@@ -38,7 +38,7 @@ Both IPv4 and IPv6 addresses are supported, however since the GeoLite IPv6 datab
 information, city, region and postal code lookups are only supported for IPv4.
 
 > **Warning**
-> You MUST update the data files after installation. The MaxMind license does not allow us to distribute the latest version of the data files with this package. Follow the instructions under update the datafiles for details.
+> **You MUST update the data files after installation.** The MaxMind license does not allow us to distribute the latest version of the data files with this package. Follow the instructions under update the datafiles for details.
 
 
 📚 Philosophy
