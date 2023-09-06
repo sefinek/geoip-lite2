@@ -7,13 +7,13 @@
    from the source directory, saving them with the same names in the output directory.
 
 .PARAMETER SourceDirectory
-   The source directory containing the unminimized JavaScript files.
+   The source directory containing the unminified JavaScript files.
 
 .PARAMETER OutputDirectory
    The output directory where the minimized files will be saved.
 #>
 
-function MinifyJSFiles {
+function Minify-JSFiles {
     [CmdletBinding()]
     param (
         [Parameter(Mandatory=$true)]
@@ -41,7 +41,7 @@ function MinifyJSFiles {
         Get-ChildItem "$SourceDirectory\*.js" | ForEach-Object {
             $FileName = $_.Name
             $OutputFileName = Join-Path $OutputDirectory $FileName
-            npx terser $_.FullName -o $OutputFileName --mangle --ecma 2023 --compress --format quote_style=1 --toplevel --timings
+            npx terser $_.FullName -o $OutputFileName --mangle --ecma 2023 --compress --format quote_style=1 --toplevel --timings --passes=2
         }
     }
     catch {
@@ -50,6 +50,6 @@ function MinifyJSFiles {
 }
 
 # Minimize files in the specified directories
-MinifyJSFiles -SourceDirectory ".\lib-unminified" -OutputDirectory ".\lib"
-MinifyJSFiles -SourceDirectory ".\scripts-unminified" -OutputDirectory ".\scripts"
-MinifyJSFiles -SourceDirectory ".\test-unminified" -OutputDirectory ".\test"
+Minify-JSFiles -SourceDirectory ".\lib-unminified" -OutputDirectory ".\lib"
+Minify-JSFiles -SourceDirectory ".\scripts-unminified" -OutputDirectory ".\scripts"
+Minify-JSFiles -SourceDirectory ".\test-unminified" -OutputDirectory ".\test"
