@@ -37,7 +37,7 @@ binary file to lookup IP addresses and return the country, region and city that 
 Both IPv4 and IPv6 addresses are supported, however since the GeoLite IPv6 database does not currently contain any city or region
 information, city, region and postal code lookups are only supported for IPv4.
 
-> **Warning**:
+> **Warning**
 > **You MUST update the data files after installation.** The MaxMind license does not allow us to distribute the latest version of the data files with this package. Follow the instructions under update the datafiles for details.
 
 
@@ -94,7 +94,7 @@ Run `cd node_modules/geoip-lite2 && npm run updatedb license_key=YOUR_LICENSE_KE
 
 You can create maxmind account [here](https://www.maxmind.com/en/geolite2/signup).
 
-> **Note**:
+> **Note**
 > This requires a lot of RAM. It is known to fail on a Digital Ocean or AWS micro instance.
 > There are no plans to change this. GeoIP-Lite2 stores all data in RAM in order to be fast.
 > If you need an external API that provides GeoIP, you can use [this](#-demonstration-).
