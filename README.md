@@ -37,7 +37,7 @@ binary file to lookup IP addresses and return the country, region and city that 
 Both IPv4 and IPv6 addresses are supported, however since the GeoLite IPv6 database does not currently contain any city or region
 information, city, region and postal code lookups are only supported for IPv4.
 
-> **Note**
+> **Warning**
 > You MUST update the data files after installation. The MaxMind license does not allow us to distribute the latest version of the data files with this package. Follow the instructions under update the datafiles for details.
 
 
