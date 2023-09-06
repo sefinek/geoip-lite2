@@ -18,7 +18,7 @@ This change enhances testing and contributes to the overall reliability of the m
 
 > I am not the creator of this npm module! All copyright rights belong to its original [Creators](AUTHORS).
 
-✨ Demonstration <div id="sefinek-api"></div>
+✨ Demonstration
 ------------
 You can see this module in action on my official API. Generally speaking, the API interface is public, and you can safely use it in your projects. Happy coding!
 
@@ -97,7 +97,7 @@ You can create maxmind account [here](https://www.maxmind.com/en/geolite2/signup
 > **Note**
 > This requires a lot of RAM. It is known to fail on a Digital Ocean or AWS micro instance.
 > There are no plans to change this. GeoIP-Lite2 stores all data in RAM in order to be fast.
-> If you need an external API that provides GeoIP, you can use [this](#sefinek-api).
+> If you need an external API that provides GeoIP, you can use [this](#-demonstration-).
 
 
 🧩 API
