@@ -1,6 +1,6 @@
 {
   "name": "geoip-lite2",
-  "version": "2.0.4",
+  "version": "2.1.0",
   "description": "A light weight native JavaScript implementation of GeoIP API from MaxMind.",
   "keywords": [
     "city",
@@ -44,16 +44,13 @@
   ],
   "scripts": {
     "eslint": "eslint .",
+    "minify-linux": "bash _Minify/linux.bash",
+    "minify-win": "powershell.exe -ExecutionPolicy Bypass .\\_Minify\\windows.ps1",
     "test": "mocha test/main.js",
     "up": "ncu -u -x chalk && npm install && npm update && npm audit fix",
     "updatedb": "node scripts/updatedb.js",
     "updatedb-debug": "node scripts/updatedb.js debug",
-    "updatedb-force": "node scripts/updatedb.js force",
-    "minify-win": "powershell.exe -ExecutionPolicy Bypass .\\MinifyJS\\windows.ps1",
-    "minify-linux": "bash MinifyJS/linux.bash"
-  },
-  "config": {
-    "update": true
+    "updatedb-force": "node scripts/updatedb.js force"
   },
   "dependencies": {
     "adm-zip": "^0.5.10",
