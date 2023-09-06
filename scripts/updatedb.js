@@ -30,15 +30,15 @@ let license_key = args.find(function(arg) {
 if (typeof license_key === 'undefined' && typeof process.env.LICENSE_KEY !== 'undefined') {
 	license_key = 'license_key=' + process.env.LICENSE_KEY;
 }
-let geodatadir = args.find(function(arg) {
-	return arg.match(/^geodatadir=[\w./]+/) !== null;
+let geoDataDir = args.find(function(arg) {
+	return arg.match(/^geoDataDir=[\w./]+/) !== null;
 });
-if (typeof geodatadir === 'undefined' && typeof process.env.GEODATADIR !== 'undefined') {
-	geodatadir = 'geodatadir=' + process.env.GEODATADIR;
+if (typeof geoDataDir === 'undefined' && typeof process.env.GEODATADIR !== 'undefined') {
+	geoDataDir = 'geoDataDir=' + process.env.GEODATADIR;
 }
 let dataPath = path.resolve(__dirname, '..', 'data');
-if (typeof geodatadir !== 'undefined') {
-	dataPath = path.resolve(process.cwd(), geodatadir.split('=')[1]);
+if (typeof geoDataDir !== 'undefined') {
+	dataPath = path.resolve(process.cwd(), geoDataDir.split('=')[1]);
 	if (!fs.existsSync(dataPath)) {
 		console.log(chalk.red('ERROR') + ': Directory doesn\'t exist: ' + dataPath);
 		process.exit(1);
