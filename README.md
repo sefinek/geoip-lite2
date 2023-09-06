@@ -1,4 +1,4 @@
-🗺️ GeoIP-Lite2
+🗺️ GeoIP-Lite2 v2.1.0 - Now even faster!
 ==========
 A native Node.js API for the GeoLite data from MaxMind.
 
