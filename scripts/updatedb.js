@@ -1,4 +1,4 @@
-// Fetches and converts maxmind lite databases
+// Fetches and converts MaxMind lite databases
 
 'use strict';
 
@@ -6,11 +6,11 @@ const { name, version } = require('../package.json');
 const user_agent = `Mozilla/5.0 (compatible; ${name}/${version}; +https://sefinek.net)`;
 
 const fs = require('node:fs');
-const http = require('http');
-const https = require('https');
+const http = require('node:http');
+const https = require('node:https');
 const path = require('node:path');
-const url = require('url');
-const zlib = require('zlib');
+const url = require('node:url');
+const zlib = require('node:zlib');
 
 fs.existsSync = fs.existsSync || path.existsSync;
 
@@ -592,7 +592,7 @@ function processData(database, cb) {
 
 function updateChecksum(database, cb) {
 	if (database.skip || !database.checkValue) {
-		// don't need to update checksums cause it was not fetched or did not change
+		// Don't need to update checksums because it was not fetched or did not change
 		return cb();
 	}
 	fs.writeFile(path.join(dataPath, database.type + '.checksum'), database.checkValue, 'utf8', function(err) {
