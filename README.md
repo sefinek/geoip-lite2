@@ -100,7 +100,7 @@ There are no plans to change this. GeoIP-Lite2 stores all data in RAM in order t
 
 🧩 API
 ---
-geoip-lite2 is completely synchronous. There are no callbacks involved.
+GeoIp-Lite2 is completely synchronous. There are no callbacks involved.
 All blocking file IO is done at startup time, so all runtime calls are executed in-memory and are fast.
 Startup may take up to 200ms while it reads into memory and indexes data files.
 
