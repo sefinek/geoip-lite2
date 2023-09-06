@@ -1,8 +1,8 @@
 🗺️ GeoIP-Lite2
 ==========
-A native NodeJS API for the GeoLite data from MaxMind.
+A native Node.js API for the GeoLite data from MaxMind.
 
-This product includes GeoLite data created by MaxMind, available from https://www.maxmind.com
+This product includes GeoLite data created by MaxMind, available from: https://www.maxmind.com
 
 > **Note**
 > You MUST update the data files after installation. The MaxMind license does not allow us to distribute the latest version of the data files with this package. Follow the instructions under update the datafiles for details.
@@ -41,7 +41,7 @@ My prime motivator was the fact that it was really hard to get libgeoip built fo
 
 🕵️‍♂️ Why GeoIP-Lite?
 -------------
-GeoIP-Lite is a fully JavaScript implementation of the MaxMind geoip API. It is not as fully featured as bindings that use `libgeoip`.
+GeoIP-Lite is a fully JavaScript implementation of the MaxMind GeoIP API. It is not as fully featured as bindings that use `libgeoip`.
 By reducing scope, this package is about 40% faster at doing lookups. On average, an IP to Location lookup should take 20 microseconds on
 a Macbook Pro. IPv4 addresses take about 6 microseconds, while IPv6 addresses take about 30 microseconds.
 
@@ -176,7 +176,7 @@ You can do it programmatically, calling after scheduled data updates
 geoip.reloadDataSync();
 
 // Asynchronously
-geoip.reloadData(function() {
+geoip.reloadData(() => {
     console.log('Done');
 });
 ```
@@ -198,7 +198,7 @@ however it is the best available for free. You can use the commercial GeoIP data
 accuracy by buying a license from MaxMind, and then using the conversion utility to convert it to a format that
 GeoIP-Lite understands. You will need to use the `.csv` files from MaxMind for conversion.
 
-Also note that on occassion, the library may take up to 5 seconds to load into memory. This is largely dependent on
+Also note that on occasion, the library may take up to 5 seconds to load into memory. This is largely dependent on
 how busy your disk is at that time. It can take as little as 200ms on a lightly loaded disk. This is a one time
 cost though, and you make it up at run time with very fast lookups.
 
