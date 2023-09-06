@@ -15,21 +15,26 @@
     "fast-geoip"
   ],
   "homepage": "https://github.com/sefinek24/geoip-lite2",
+  "bugs": {
+    "url": "https://github.com/sefinek24/geoip-lite2/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/sefinek24/geoip-lite2.git"
+  },
+  "license": "Apache-2.0",
   "author": "Philip Tellis <philip@bluesmoon.info> (https://bluesmoon.info)",
+  "main": "lib/geoip.js",
+  "directories": {
+    "lib": "lib",
+    "test": "test"
+  },
   "files": [
     "lib/",
     "data/",
     "test/",
     "scripts/"
   ],
-  "main": "lib/geoip.js",
-  "repository": {
-    "type": "git",
-    "url": "git://github.com/sefinek24/geoip-lite2.git"
-  },
-  "engines": {
-    "node": ">=5.10.0"
-  },
   "scripts": {
     "eslint": "eslint .",
     "test": "mocha test/main.js",
@@ -37,6 +42,9 @@
     "updatedb": "node scripts/updatedb.js",
     "updatedb-debug": "node scripts/updatedb.js debug",
     "updatedb-force": "node scripts/updatedb.js force"
+  },
+  "config": {
+    "update": true
   },
   "dependencies": {
     "adm-zip": "^0.5.10",
@@ -47,19 +55,11 @@
     "lazy": "1.0.11",
     "rimraf": "^5.0.1"
   },
-  "config": {
-    "update": true
-  },
   "devDependencies": {
     "eslint": "^8.48.0",
     "mocha": "^10.2.0"
   },
-  "license": "Apache-2.0",
-  "bugs": {
-    "url": "https://github.com/sefinek24/geoip-lite2/issues"
-  },
-  "directories": {
-    "lib": "lib",
-    "test": "test"
+  "engines": {
+    "node": ">=5.10.0"
   }
 }
