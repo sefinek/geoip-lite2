@@ -19,6 +19,12 @@ This change enhances testing and contributes to the overall reliability of the m
 
 > I am not the creator of this npm module! All copyright rights belong to its original [Creators](AUTHORS).
 
+✨ Demonstration
+------------
+You can see this module in action on my official API. Generally speaking, the API interface is public, and you can safely use it in your projects.
+
+> Endpoint : https://api.sefinek.net/api/v2/geoip/{ip}  
+> Example  : https://api.sefinek.net/api/v2/geoip/109.207.159.255
 
 📑 Introduction
 ------------
