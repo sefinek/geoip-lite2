@@ -7,7 +7,7 @@ if (process.argv.length > 2) {
 	console.dir(geoIp2.lookup(process.argv[2]));
 	const t3 = +new Date();
 	console.log('Startup: %dms, exec: %dms', t2 - t1, t3 - t2);
-	process.exit();
+	process.exit(1);
 }
 
 const f = [];
