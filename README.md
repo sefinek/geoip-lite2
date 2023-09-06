@@ -94,8 +94,9 @@ Run `cd node_modules/geoip-lite2 && npm run updatedb license_key=YOUR_LICENSE_KE
 
 You can create maxmind account [here](https://www.maxmind.com/en/geolite2/signup).
 
-**NOTE** that this requires a lot of RAM. It is known to fail on a Digital Ocean or AWS micro instance.
-There are no plans to change this. GeoIP-Lite2 stores all data in RAM in order to be fast.
+> **Note**
+> This requires a lot of RAM. It is known to fail on a Digital Ocean or AWS micro instance.
+> There are no plans to change this. GeoIP-Lite2 stores all data in RAM in order to be fast.
 
 
 🧩 API
