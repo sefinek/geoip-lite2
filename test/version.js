@@ -1,1 +1,1 @@
-const geoIp2=require("../lib/geoip.js");console.log(geoIp2.version);
+const o=require('../lib/geoip.js');console.log(o.version);

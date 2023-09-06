@@ -1,1 +1,1 @@
-const geoIp2=require("../lib/geoip.js");console.log(process.memoryUsage());
+const e=require('../lib/geoip.js');console.log(process.memoryUsage());
