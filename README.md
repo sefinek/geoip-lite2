@@ -97,7 +97,7 @@ You can create maxmind account [here](https://www.maxmind.com/en/geolite2/signup
 > **Note**
 > This requires a lot of RAM. It is known to fail on a Digital Ocean or AWS micro instance.
 > There are no plans to change this. GeoIP-Lite2 stores all data in RAM in order to be fast.
-> If you need an external API that provides GeoIP, you can use [this](#-demonstration-).
+> If you need an external API that provides GeoIP, you can use [this](#-demonstration).
 
 
 🧩 API
