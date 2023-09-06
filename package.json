@@ -64,7 +64,8 @@
   },
   "devDependencies": {
     "eslint": "^8.48.0",
-    "mocha": "^10.2.0"
+    "mocha": "^10.2.0",
+    "uglify-js": "^3.17.4"
   },
   "engines": {
     "node": ">=5.10.0"
