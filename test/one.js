@@ -1,1 +1,1 @@
-const o=require('../lib/geoip.js');const e='2003:6:2184:e6d5:5991:6779:38be:654';const s=o.lookup(e);console.log(s);
+const o=require('../lib/geoip.js').lookup('2003:6:2184:e6d5:5991:6779:38be:654');console.log(o);
