@@ -3,7 +3,7 @@
 'use strict';
 
 const { name, version } = require('../package.json');
-const user_agent = `Mozilla/5.0 (compatible; ${name}/${version}; +https://sefinek.net)`;
+const userAgent = `Mozilla/5.0 (compatible; ${name}/${version}; +https://sefinek.net)`;
 
 const fs = require('node:fs');
 const http = require('node:http');
@@ -134,7 +134,7 @@ function CSVtoArray(text) {
 function getHTTPOptions(downloadUrl) {
 	const options = url.parse(downloadUrl);
 	options.headers = {
-		'User-Agent': user_agent,
+		'User-Agent': userAgent,
 	};
 
 	if (process.env.http_proxy || process.env.https_proxy) {
