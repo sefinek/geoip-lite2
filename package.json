@@ -3,16 +3,22 @@
   "version": "2.0.4",
   "description": "A light weight native JavaScript implementation of GeoIP API from MaxMind.",
   "keywords": [
+    "city",
+    "country",
+    "fast-geoip",
     "geo",
     "geoip",
+    "geolite",
+    "geolite2",
+    "geolocation",
+    "geolookup",
     "ip",
     "ipv4",
     "ipv6",
-    "geolookup",
+    "location",
     "maxmind",
-    "geolite",
-    "geolite2",
-    "fast-geoip"
+    "region",
+    "state"
   ],
   "homepage": "https://github.com/sefinek24/geoip-lite2",
   "bugs": {
@@ -20,7 +26,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git://github.com/sefinek24/geoip-lite2.git"
+    "url": "git+https://github.com/sefinek24/geoip-lite2.git"
   },
   "license": "Apache-2.0",
   "author": "Philip Tellis <philip@bluesmoon.info> (https://bluesmoon.info)",
