@@ -32,7 +32,7 @@ MaxMind provides a set of data files for IP to Geo mapping along with opensource
 One would typically write a wrapper around their C API to get access to this data in other languages (like JavaScript).
 
 GeoIP-Lite instead attempts to be a fully native JavaScript library. A converter script converts the CSV files from MaxMind into
-an internal binary format (note that this is different from the binary data format provided by MaxMind). The geoip module uses this
+an internal binary format (note that this is different from the binary data format provided by MaxMind). The geo-ip module uses this
 binary file to lookup IP addresses and return the country, region and city that it maps to.
 
 Both IPv4 and IPv6 addresses are supported, however since the GeoLite IPv6 database does not currently contain any city or region
