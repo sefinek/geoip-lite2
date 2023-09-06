@@ -20,7 +20,7 @@ const iconv = require('iconv-lite');
 const lazy = require('lazy');
 const rimraf = require('rimraf').sync;
 const AdmZip = require('adm-zip');
-const utils = require('../lib-unminified/utils.js');
+const utils = require('../lib-unminimized/utils.js');
 const { Address6, Address4 } = require('ip-address');
 
 const args = process.argv.slice(2);

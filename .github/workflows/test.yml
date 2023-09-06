@@ -14,4 +14,4 @@ jobs:
         with:
           node-version: '18.x'
       - run: npm install
-      - run: npm test-unminified
+      - run: npm test-unminimized

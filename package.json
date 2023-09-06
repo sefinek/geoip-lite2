@@ -48,7 +48,9 @@
     "up": "ncu -u -x chalk && npm install && npm update && npm audit fix",
     "updatedb": "node scripts/updatedb.js",
     "updatedb-debug": "node scripts/updatedb.js debug",
-    "updatedb-force": "node scripts/updatedb.js force"
+    "updatedb-force": "node scripts/updatedb.js force",
+    "minify-win": "powershell.exe -ExecutionPolicy Bypass .\\MinifyJS\\windows.ps1",
+    "minify-linux": "bash MinifyJS/linux.bash"
   },
   "config": {
     "update": true
@@ -65,7 +67,7 @@
   "devDependencies": {
     "eslint": "^8.48.0",
     "mocha": "^10.2.0",
-    "uglify-js": "^3.17.4"
+    "terser": "^5.19.4"
   },
   "engines": {
     "node": ">=5.10.0"
