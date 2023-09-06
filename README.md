@@ -211,20 +211,22 @@ how busy your disk is at that time. It can take as little as 200ms on a lightly 
 cost though, and you make it up at run time with very fast lookups.
 
 ### Memory usage
-Quick test on memory consumption shows that library uses around 100Mb per process
+Quick test on memory consumption shows that library uses around 100Mb per process.
 
 ```javascript
-    const geoip2 = require('geoip-lite2');
-    console.log(process.memoryUsage());
-    /**
-    * Outputs:
-    * {
-    *     rss: 126365696,
-    *     heapTotal: 10305536,
-    *     heapUsed: 5168944,
-    *     external: 104347120
-    * }
-    **/
+const geoip2 = require('geoip-lite2');
+console.log(process.memoryUsage());
+
+/**
+ * Output:
+ * {
+ *     rss: 126365696,
+ *     heapTotal: 7753728,
+ *     heapUsed: 5844880,
+ *     external: 164098897,
+ *     arrayBuffers: 163675390
+ * }
+**/
 ```
 
 
