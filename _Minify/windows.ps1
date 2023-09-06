@@ -41,7 +41,7 @@ function MinifyJSFiles {
         Get-ChildItem "$SourceDirectory\*.js" | ForEach-Object {
             $FileName = $_.Name
             $OutputFileName = Join-Path $OutputDirectory $FileName
-            npx terser $_.FullName -o $OutputFileName --compress --mangle
+            npx terser $_.FullName -o $OutputFileName --compress --mangle --ecma 2023
         }
     }
     catch {
