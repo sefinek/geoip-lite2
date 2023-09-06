@@ -1,4 +1,6 @@
 declare module 'geoip-lite2' {
+    export const cmp: number | any | null
+
     export type GeoData = {
         range: [number, number];
         country: string;
