@@ -33,9 +33,9 @@
   "main": "lib/geoip.js",
   "types": "index.d.ts",
   "directories": {
-    "data": "data",
     "lib": "lib",
     "test": "test",
+    "data": "data",
     "utils": "utils"
   },
   "files": [
