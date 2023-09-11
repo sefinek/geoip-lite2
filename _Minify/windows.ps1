@@ -51,5 +51,5 @@ function Minify-JSFiles {
 
 # Minimize files in the specified directories
 Minify-JSFiles -SourceDirectory ".\lib-unminified" -OutputDirectory ".\lib"
-Minify-JSFiles -SourceDirectory ".\scripts-unminified" -OutputDirectory ".\scripts"
+Minify-JSFiles -SourceDirectory ".\utils-unminified" -OutputDirectory ".\utils"
 Minify-JSFiles -SourceDirectory ".\test-unminified" -OutputDirectory ".\test"
