@@ -44,7 +44,7 @@
   ],
   "scripts": {
     "eslint": "eslint .",
-    "minify-linux": "bash _Minify/linux.bash",
+    "minify-linux": "echo \"Not finished yet >:\"",
     "minify-win": "powershell.exe -ExecutionPolicy Bypass .\\_Minify\\windows.ps1",
     "test": "mocha test/main.js",
     "up": "ncu -u -x chalk && npm install && npm update && npm audit fix",
