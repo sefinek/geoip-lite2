@@ -7,6 +7,7 @@ module.exports = {
 	'parserOptions': {
 		'ecmaVersion': 2023,
 	},
+	'ignorePatterns': ['lib', 'test', 'utils'],
 	'rules': {
 		'arrow-spacing': ['warn', { 'before': true, 'after': true }],
 		'comma-dangle': ['error', 'always-multiline'],
