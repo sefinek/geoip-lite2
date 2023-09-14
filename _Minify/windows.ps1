@@ -24,6 +24,8 @@ function MinifyJSFiles {
     )
 
     try {
+        Write-Host "Minimizing JavaScript files in $SourceDirectory and saving to $OutputDirectory"
+
         # Check if the source directory exists
         if (-not (Test-Path -Path $SourceDirectory -PathType Container)) {
             throw "Source directory does not exist: $SourceDirectory"
@@ -31,18 +33,23 @@ function MinifyJSFiles {
 
         # Remove the existing output directory if it exists
         if (Test-Path -Path $OutputDirectory -PathType Container) {
+            Write-Host "Removing existing output directory: $OutputDirectory"
             Remove-Item -Path $OutputDirectory -Recurse -Force
         }
 
         # Create the output directory
+        Write-Host "Creating output directory: $OutputDirectory"
         New-Item -ItemType Directory -Force -Path $OutputDirectory
 
         # Minimize JavaScript files from the source directory and save them to the output directory using Terser
         Get-ChildItem "$SourceDirectory\*.js" | ForEach-Object {
             $FileName = $_.Name
             $OutputFileName = Join-Path $OutputDirectory $FileName
+            Write-Host "Minimizing $($_.FullName) and saving to $OutputFileName"
             npx terser $_.FullName -o $OutputFileName --mangle --ecma 2023 --compress --format quote_style=1 --toplevel --timings --passes=2
+            Write-Host "Minimized $($_.FullName) and saved to $OutputFileName"
         }
+        Write-Host "Minimization of JavaScript files in $SourceDirectory completed"
     }
     catch {
         Write-Error "An error occurred: $_"
