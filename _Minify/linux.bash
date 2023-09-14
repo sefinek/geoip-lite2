@@ -21,9 +21,11 @@ function MinifyJSFiles {
 
     # Minimize JavaScript files from the source directory and save them to the output directory using Terser
     for file in "$SourceDirectory"/*.js; do
-        FileName=$(basename "$file")
-        OutputFileName="$OutputDirectory/$FileName"
-        npx terser "$file" -o "$OutputFileName" --mangle --ecma 2023 --compress --format quote_style=1 --toplevel --timings --passes=2
+        if [ -e "$file" ]; then
+            FileName=$(basename "$file")
+            OutputFileName="$OutputDirectory/$FileName"
+            npx terser "$file" -o "$OutputFileName" --mangle --ecma 2023 --compress --format quote_style=1 --toplevel --timings --passes=2
+        fi
     done
 }
 
