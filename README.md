@@ -68,7 +68,7 @@ a Macbook Pro. IPv4 addresses take about 6 microseconds, while IPv6 addresses ta
 ```javascript
 const geoIp2 = require('geoip-lite2');
 
-const ip = '207.97.227.239';
+const ip = '146.19.109.255';
 const geo = geoIp2.lookup(ip);
 
 console.log(geo);
@@ -77,15 +77,15 @@ console.log(geo);
 ### Output
 ```json
 {
-  "range": [ 3479298048, 3479300095 ],
-  "country": "US",
-  "region": "TX",
-  "eu": "0",
-  "timezone": "America/Chicago",
-  "city": "San Antonio",
-  "ll": [ 29.4969, -98.4032 ],
-  "metro": 641,
-  "area": 1000
+  "range": [ 2450746624, 2450746879 ],
+  "country": "PL",
+  "region": "14",
+  "eu": "1",
+  "timezone": "Europe/Warsaw",
+  "city": "Warsaw",
+  "ll": [ 52.2296, 21.0067 ],
+  "metro": 0,
+  "area": 20
 }
 ```
 
@@ -135,7 +135,7 @@ If the IP address was found, the `lookup` method returns an object with the foll
                                   // FIPS 10-4 subcountry code
    eu: '0',                       // 1 if the country is a member state of the European Union, 0 otherwise.
    timezone: 'Country/Zone',      // Timezone from IANA Time Zone Database
-   city: "City Name",             // This is the full city name
+   city: 'City Name',             // This is the full city name
    ll: [<latitude>, <longitude>], // The latitude and longitude of the city
    metro: <metro code>,           // Metro code
    area: <accuracy_radius>        // The approximate accuracy radius (km), around the latitude and longitude
@@ -152,7 +152,7 @@ If you have a 32-bit unsigned integer, or a number returned as part of the `rang
 the `pretty` method can be used to turn it into a human-readable string.
 
 ```javascript
-console.log('The IP is %s', geoip.pretty(ip));
+console.log('The IP is %s', geoIp2.pretty(ip));
 ```
 
 This method returns a string if the input was in a format that `geoip-lite2` can recognise, else it returns the
@@ -191,10 +191,10 @@ You can do it programmatically, calling after scheduled data updates
 
 ```javascript
 // Synchronously
-geoip.reloadDataSync();
+geoIp2.reloadDataSync();
 
 // Asynchronously
-geoip.reloadData(() => {
+geoIp2.reloadData(() => {
     console.log('Done');
 });
 ```
@@ -203,7 +203,7 @@ geoip.reloadData(() => {
 You can enable the data watcher to automatically refresh in-memory geo data when a file changes in the data directory.
 
 ```javascript
-geoip.startWatchingDataUpdate();
+geoIp2.startWatchingDataUpdate();
 ```
 
 This tool can be used with `npm run updatedb` to periodically update geo data on a running server.
@@ -224,7 +224,7 @@ cost though, and you make it up at run time with very fast lookups.
 Quick test on memory consumption shows that library uses around 100Mb per process.
 
 ```javascript
-const geoip2 = require('geoip-lite2');
+const geoIp2 = require('geoip-lite2');
 console.log(process.memoryUsage());
 
 /**
