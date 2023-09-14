@@ -1,9 +1,9 @@
 <#
 .SYNOPSIS
-   MinifyJSFiles function minimizes JavaScript files from a source directory and saves them to an output directory using Terser.
+   Minify-JSFiles function minimizes JavaScript files from a source directory and saves them to an output directory using Terser.
 
 .DESCRIPTION
-   The MinifyJSFiles function checks if the output directory exists, creates it if it does not exist, and then minimizes all .js files
+   The Minify-JSFiles function checks if the output directory exists, creates it if it does not exist, and then minimizes all .js files
    from the source directory, saving them with the same names in the output directory.
 
 .PARAMETER SourceDirectory
