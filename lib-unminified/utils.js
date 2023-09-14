@@ -1,11 +1,11 @@
 const utils = module.exports = {};
 
-utils.aton4 = function(a) {
+utils.aton4 = a => {
 	a = a.split(/\./);
 	return ((parseInt(a[0], 10) << 24) >>> 0) + ((parseInt(a[1], 10) << 16) >>> 0) + ((parseInt(a[2], 10) << 8) >>> 0) + (parseInt(a[3], 10) >>> 0);
 };
 
-utils.aton6 = function(a) {
+utils.aton6 = a => {
 	a = a.replace(/"/g, '').split(/:/);
 
 	const l = a.length - 1;
@@ -40,14 +40,14 @@ utils.aton6 = function(a) {
 };
 
 
-utils.cmp = function(a, b) {
+utils.cmp = (a, b) => {
 	if (typeof a === 'number' && typeof b === 'number') return (a < b ? -1 : (a > b ? 1 : 0));
 	if (a instanceof Array && b instanceof Array) return this.cmp6(a, b);
 
 	return null;
 };
 
-utils.cmp6 = function(a, b) {
+utils.cmp6 = (a, b) => {
 	for (let ii = 0; ii < 2; ii++) {
 		if (a[ii] < b[ii]) return -1;
 		if (a[ii] > b[ii]) return 1;
@@ -56,7 +56,7 @@ utils.cmp6 = function(a, b) {
 	return 0;
 };
 
-utils.isPrivateIP = function(addr) {
+utils.isPrivateIP = addr => {
 	addr = addr.toString();
 
 	return addr.match(/^10\.([0-9]{1,3})\.([0-9]{1,3})\.([0-9]{1,3})/) != null ||
@@ -67,14 +67,14 @@ utils.isPrivateIP = function(addr) {
     addr.match(/^fc00:/) != null || addr.match(/^fe80:/) != null;
 };
 
-utils.ntoa4 = function(n) {
+utils.ntoa4 = n => {
 	n = n.toString();
 	n = '' + (n >>> 24 & 0xff) + '.' + (n >>> 16 & 0xff) + '.' + (n >>> 8 & 0xff) + '.' + (n & 0xff);
 
 	return n;
 };
 
-utils.ntoa6 = function(n) {
+utils.ntoa6 = n => {
 	let a = '[';
 
 	for (let i = 0; i < n.length; i++) {
