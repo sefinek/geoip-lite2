@@ -185,7 +185,7 @@ function check(database, cb) {
 				str += chunk;
 			});
 
-			response.on('end', function() {
+			response.on('end', () => {
 				if (str && str.length) {
 					if (str == database.checkValue) {
 						console.log(chalk.green('Database "' + database.type + '" is up to date'));
@@ -241,7 +241,7 @@ function fetch(database, cb) {
 			tmpFilePipe = response.pipe(tmpFileStream);
 		}
 
-		tmpFilePipe.on('close', function() {
+		tmpFilePipe.on('close', () => {
 			console.log(chalk.green(' DONE'));
 			cb(null, tmpFile, fileName, database);
 		});
@@ -304,7 +304,7 @@ function processLookupCountry(src, cb) {
 	})
 	.skip(1)
 	.map(processLine)
-	.on('pipe', function() {
+	.on('pipe', () => {
 		console.log(chalk.green(' DONE'));
 		cb();
 	});
@@ -385,7 +385,7 @@ function processCountryData(src, dest, cb) {
 	})
 	.skip(1)
 	.map(processLine)
-	.on('pipe', function() {
+	.on('pipe', () => {
 		console.log(chalk.green(' DONE'));
 		cb();
 	});
@@ -564,24 +564,24 @@ function processData(database, cb) {
 
 	if (type === 'country') {
 		if (Array.isArray(src)) {
-			processLookupCountry(src[0], function() {
-				processCountryData(src[1], dest[1], function() {
-					processCountryData(src[2], dest[2], function() {
+			processLookupCountry(src[0], () => {
+				processCountryData(src[1], dest[1], () => {
+					processCountryData(src[2], dest[2], () => {
 						cb(null, database);
 					});
 				});
 			});
 		}
 		else {
-			processCountryData(src, dest, function() {
+			processCountryData(src, dest, () => {
 				cb(null, database);
 			});
 		}
 	} else if (type === 'city') {
-		processCityDataNames(src[0], dest[0], function() {
-			processCityData(src[1], dest[1], function() {
+		processCityDataNames(src[0], dest[0], () => {
+			processCityData(src[1], dest[1], () => {
 				console.log('city data processed');
-				processCityData(src[2], dest[2], function() {
+				processCityData(src[2], dest[2], () => {
 					console.log(chalk.green(' DONE'));
 					cb(null, database);
 				});
@@ -613,12 +613,12 @@ async.eachSeries(databases, function(database, nextDatabase) {
 	async.seq(check, fetch, extract, processData, updateChecksum)(database, nextDatabase);
 }, function(err) {
 	if (err) {
-		console.error(chalk.red('Failed to Update Databases from MaxMind.'), err);
+		console.error(chalk.red('Failed to update databases from MaxMind.'), err);
 		process.exit(1);
 	} else {
-		console.log(chalk.green('Successfully Updated Databases from MaxMind.'));
+		console.log(chalk.green('Successfully updated databases from MaxMind.'));
 		if (args.indexOf('debug') !== -1) {
-			console.log(chalk.yellow.bold('Notice: temporary files are not deleted for debug purposes.'));
+			console.debug(chalk.yellow.bold('Notice: temporary files are not deleted for debug purposes.'));
 		} else {
 			rimraf(tmpPath);
 		}
