@@ -146,19 +146,19 @@ const lookup6 = ip => {
 		city: '',
 		ll: [0, 0],
 	};
-	const readip = (line, offset) => {
-		let ii = 0;
-		const ip = [];
+	const readIp = (line, offset) => {
+		let ii;
+		const ipArray = [];
 
 		for (ii = 0; ii < 2; ii++) {
-			ip.push(buffer.readUInt32BE((line * recordSize) + (offset * 16) + (ii * 4)));
+			ipArray.push(buffer.readUInt32BE((line * recordSize) + (offset * 16) + (ii * 4)));
 		}
 
-		return ip;
+		return ipArray;
 	};
 
-	cache6.lastIP = readip(cache6.lastLine, 1);
-	cache6.firstIP = readip(0, 0);
+	cache6.lastIP = readIp(cache6.lastLine, 1);
+	cache6.firstIP = readIp(0, 0);
 
 	let fline = 0;
 	let floor = cache6.lastIP;
@@ -173,8 +173,8 @@ const lookup6 = ip => {
 
 	do {
 		line = Math.round((cline - fline) / 2) + fline;
-		floor = readip(line, 0);
-		ceil = readip(line, 1);
+		floor = readIp(line, 0);
+		ceil = readIp(line, 1);
 
 		if (utils.cmp6(floor, ip) <= 0 && utils.cmp6(ceil, ip) >= 0) {
 			if (recordSize === RECORD_SIZE6) {
@@ -227,7 +227,7 @@ function preload(callback) {
 	let datSize;
 	const asyncCache = JSON.parse(JSON.stringify(conf4));
 
-	// when the preload function receives a callback, do the task asynchronously
+	// When the preload function receives a callback, do the task asynchronously
 	if (typeof arguments[0] === 'function') {
 		async.series([
 			cb => {
@@ -287,8 +287,7 @@ function preload(callback) {
 						cb();
 					}
 				});
-			},
-			() => {
+			}, () => {
 				asyncCache.mainBuffer = Buffer.alloc(datSize);
 
 				async.series([
@@ -317,9 +316,7 @@ function preload(callback) {
 			datSize = fs.fstatSync(datFile).size;
 
 			if (datSize === 0) {
-				throw {
-					code: 'EMPTY_FILE',
-				};
+				throw { code: 'EMPTY_FILE' };
 			}
 
 			cache4.locationBuffer = Buffer.alloc(datSize);
@@ -340,7 +337,6 @@ function preload(callback) {
 
 		cache4.mainBuffer = Buffer.alloc(datSize);
 		fs.readSync(datFile, cache4.mainBuffer, 0, datSize, 0);
-
 		fs.closeSync(datFile);
 
 		cache4.lastLine = (datSize / cache4.recordSize) - 1;
@@ -354,7 +350,7 @@ function preload6(callback) {
 	let datSize;
 	const asyncCache6 = JSON.parse(JSON.stringify(conf6));
 
-	// when the preload function receives a callback, do the task asynchronously
+	// When the preload function receives a callback, do the task asynchronously
 	if (typeof arguments[0] === 'function') {
 		async.series([
 			cb => {
@@ -394,8 +390,7 @@ function preload6(callback) {
 						cb();
 					}
 				});
-			},
-			() => {
+			}, () => {
 				asyncCache6.mainBuffer = Buffer.alloc(datSize);
 
 				async.series([
@@ -438,7 +433,6 @@ function preload6(callback) {
 
 		cache6.mainBuffer = Buffer.alloc(datSize);
 		fs.readSync(datFile, cache6.mainBuffer, 0, datSize, 0);
-
 		fs.closeSync(datFile);
 
 		cache6.lastLine = (datSize / cache6.recordSize) - 1;
@@ -487,8 +481,7 @@ module.exports = {
 			async.series([
 				cb => {
 					preload(cb);
-				},
-				cb => {
+				}, cb => {
 					preload6(cb);
 				},
 			], callback);
