@@ -8,6 +8,7 @@
     "fast-geoip",
     "geo",
     "geoip",
+    "geoip-api",
     "geolite",
     "geolite2",
     "geolocation",
