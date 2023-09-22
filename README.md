@@ -1,7 +1,8 @@
-🗺️ GeoIP-Lite2 v2.1 - Now even faster!
-==========
-A native Node.js API for the GeoLite data from MaxMind.
+<div align="center">
+    <h1>🗺️ GeoIP-Lite2 v2.1 - Now even faster!</h1>
+</div>
 
+A native Node.js API for the GeoLite data from MaxMind.  
 This product includes GeoLite data created by MaxMind, available from: https://www.maxmind.com
 
 <a href="https://www.npmjs.com/package/geoip-lite2" target="_blank" title="geoip-lite2 - npm" style="text-decoration:none">
