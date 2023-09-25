@@ -1,8 +1,10 @@
 module.exports = {
-	'extends': 'eslint:recommended',
+	'extends': [
+		'eslint:recommended',
+	],
 	'env': {
 		'node': true,
-		'es6': true,
+		'es2023': true,
 	},
 	'parserOptions': {
 		'ecmaVersion': 2023,
@@ -16,7 +18,7 @@ module.exports = {
 		'curly': ['error', 'multi-line', 'consistent'],
 		'dot-location': ['error', 'property'],
 		'handle-callback-err': 'off',
-		'indent': ['warn', 'tab', { 'MemberExpression': 0 }],
+		'indent': ['warn', 'tab'],
 		'keyword-spacing': 'warn',
 		'max-nested-callbacks': ['error', { 'max': 4 }],
 		'max-statements-per-line': ['error', { 'max': 2 }],
@@ -25,7 +27,7 @@ module.exports = {
 		'no-floating-decimal': 'error',
 		'no-lonely-if': 'error',
 		'no-multi-spaces': 'warn',
-		'no-multiple-empty-lines': ['warn', { 'max': 3, 'maxEOF': 1, 'maxBOF': 0 }],
+		'no-multiple-empty-lines': ['warn', { 'max': 4, 'maxEOF': 1, 'maxBOF': 0 }],
 		'no-shadow': ['error', { 'allow': ['err', 'resolve', 'reject'] }],
 		'no-trailing-spaces': ['warn'],
 		'no-var': 'error',
@@ -34,11 +36,20 @@ module.exports = {
 		'quotes': ['warn', 'single'],
 		'semi': ['warn', 'always'],
 		'space-before-blocks': 'error',
-		'space-before-function-paren': ['error', { 'anonymous': 'never', 'named': 'never', 'asyncArrow': 'always' }],
+		'space-before-function-paren': ['error', {
+			'anonymous': 'never',
+			'named': 'never',
+			'asyncArrow': 'always',
+		}],
 		'space-in-parens': 'error',
 		'space-infix-ops': 'error',
 		'space-unary-ops': 'error',
 		'spaced-comment': 'warn',
 		'yoda': 'error',
+		'no-use-before-define': ['error', { 'functions': false, 'classes': true }],
+		'no-unused-vars': 'warn',
+		'wrap-regex': 'error',
+		'sort-vars': 'warn',
+		'no-unreachable': 'warn',
 	},
 };

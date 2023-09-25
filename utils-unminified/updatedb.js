@@ -88,7 +88,7 @@ function mkdir(dirName) {
 // Return array of string values, or NULL if CSV string not well-formed.
 // Return array of string values, or NULL if CSV string not well-formed.
 
-function try_fixing_line(line) {
+function tryFixingLine(line) {
 	let pos1 = 0;
 	let pos2 = -1;
 	// Escape quotes
@@ -112,9 +112,8 @@ function CSVtoArray(text) {
 	const re_value = /(?!\s*$)\s*(?:'([^'\\]*(?:\\[\S\s][^'\\]*)*)'|"([^"\\]*(?:\\[\S\s][^"\\]*)*)"|([^,'"\s\\]*(?:\s+[^,'"\s\\]+)*))\s*(?:,|$)/g;
 	// Return NULL if input string is not well-formed CSV string.
 	if (!re_valid.test(text)) {
-		text = try_fixing_line(text);
-		if (!re_valid.test(text))
-		{return null;}
+		text = tryFixingLine(text);
+		if (!re_valid.test(text)) return null;
 	}
 	const a = []; // Initialize array to receive values.
 	text.replace(re_value, // "Walk" the string using replace with callback.
@@ -133,9 +132,7 @@ function CSVtoArray(text) {
 
 function getHTTPOptions(downloadUrl) {
 	const options = url.parse(downloadUrl);
-	options.headers = {
-		'User-Agent': userAgent,
-	};
+	options.headers = { 'User-Agent': userAgent };
 
 	if (process.env.http_proxy || process.env.https_proxy) {
 		try {
@@ -160,10 +157,7 @@ function check(database, cb) {
 
 	const checksumUrl = database.checksum;
 
-	if (typeof checksumUrl === 'undefined') {
-		// No checksum url to check, skipping
-		return cb(null, database);
-	}
+	if (typeof checksumUrl === 'undefined') return cb(null, database); // No checksum url to check, skipping
 
 	// Read existing checksum file
 	fs.readFile(path.join(dataPath, database.type + '.checksum'), { encoding: 'utf8' }, function(err, data) {
@@ -174,9 +168,9 @@ function check(database, cb) {
 		function onResponse(response) {
 			const status = response.statusCode;
 			if (status !== 200) {
-				console.log(chalk.red('ERROR') + response.data);
-				console.log(chalk.red('ERROR') + ': HTTP Request Failed [%d %s]', status, http.STATUS_CODES[status]);
-				client.abort();
+				console.error(chalk.red('ERROR') + response.data);
+				console.error(chalk.red('ERROR') + ': HTTP Request Failed [%d %s]', status, http.STATUS_CODES[status]);
+				client.end();
 				process.exit(1);
 			}
 
@@ -197,9 +191,9 @@ function check(database, cb) {
 					}
 				}
 				else {
-					console.log(chalk.red('ERROR') + ': Could not retrieve checksum for', database.type, chalk.red('Aborting'));
-					console.log('Run with "force" to update without checksum');
-					client.abort();
+					console.error(chalk.red('ERROR') + ': Could not retrieve checksum for', database.type, chalk.red('Aborting'));
+					console.error('Run with "force" to update without checksum');
+					client.end();
 					process.exit(1);
 				}
 				cb(null, database);
@@ -228,7 +222,7 @@ function fetch(database, cb) {
 
 		if (status !== 200) {
 			console.error(chalk.red('ERROR') + ': HTTP Request Failed [%d %s]', status, http.STATUS_CODES[status]);
-			client.abort();
+			client.end();
 			process.exit(1);
 		}
 
@@ -255,9 +249,7 @@ function fetch(database, cb) {
 }
 
 function extract(tmpFile, tmpFileName, database, cb) {
-	if (database.skip) {
-		return cb(null, database);
-	}
+	if (database.skip) return cb(null, database);
 
 	if (path.extname(tmpFileName) !== '.zip') {
 		cb(null, database);
@@ -267,10 +259,7 @@ function extract(tmpFile, tmpFileName, database, cb) {
 		const zipEntries = zip.getEntries();
 
 		zipEntries.forEach((entry) => {
-			if (entry.isDirectory) {
-				// Skip directory entries
-				return;
-			}
+			if (entry.isDirectory) return; // Skip directory entries
 
 			const filePath = entry.entryName.split('/');
 			const fileName = filePath[filePath.length - 1];
@@ -298,16 +287,14 @@ function processLookupCountry(src, cb) {
 	process.stdout.write('Processing Lookup Data (may take a moment)...');
 
 	lazy(fs.createReadStream(tmpDataFile))
-	.lines
-	.map(function(byteArray) {
-		return iconv.decode(byteArray, 'latin1');
-	})
-	.skip(1)
-	.map(processLine)
-	.on('pipe', () => {
-		console.log(chalk.green(' DONE'));
-		cb();
-	});
+		.lines
+		.map(byteArray => iconv.decode(byteArray, 'latin1'))
+		.skip(1)
+		.map(processLine)
+		.on('pipe', () => {
+			console.log(chalk.green(' DONE'));
+			cb();
+		});
 }
 
 function processCountryData(src, dest, cb) {
@@ -379,16 +366,14 @@ function processCountryData(src, dest, cb) {
 	var datFile = fs.openSync(dataFile, 'w');
 
 	lazy(fs.createReadStream(tmpDataFile))
-	.lines
-	.map(function(byteArray) {
-		return iconv.decode(byteArray, 'latin1');
-	})
-	.skip(1)
-	.map(processLine)
-	.on('pipe', () => {
-		console.log(chalk.green(' DONE'));
-		cb();
-	});
+		.lines
+		.map(byteArray => iconv.decode(byteArray, 'latin1'))
+		.skip(1)
+		.map(processLine)
+		.on('pipe', () => {
+			console.log(chalk.green(' DONE'));
+			cb();
+		});
 }
 
 function processCityData(src, dest, cb) {
@@ -400,7 +385,7 @@ function processCityData(src, dest, cb) {
 
 		const fields = CSVtoArray(line);
 		if (!fields) {
-			console.warn('weird line: %s::', line);
+			console.warn('Weird line: %s::', line);
 			return;
 		}
 		let sip;
@@ -482,33 +467,29 @@ function processCityData(src, dest, cb) {
 
 	rimraf(dataFile);
 
-	process.stdout.write('Processing Data (may take a moment) ...');
+	process.stdout.write('Processing data (may take a moment) ...');
 	var tstart = Date.now();
 	var datFile = fs.openSync(dataFile, 'w');
 
 	lazy(fs.createReadStream(tmpDataFile))
-	.lines
-	.map(function(byteArray) {
-		return iconv.decode(byteArray, 'latin1');
-	})
-	.skip(1)
-	.map(processLine)
-	.on('pipe', cb);
+		.lines
+		.map(byteArray => iconv.decode(byteArray, 'latin1'))
+		.skip(1)
+		.map(processLine)
+		.on('pipe', cb);
 }
 
 function processCityDataNames(src, dest, cb) {
 	let locId = null;
 	let linesCount = 0;
 	function processLine(line) {
-		if (line.match(/^Copyright/) || !line.match(/\d/)) {
-			return;
-		}
+		if (line.match(/^Copyright/) || !line.match(/\d/)) return;
 
 		const b = Buffer.alloc(88);
 		const fields = CSVtoArray(line);
 		if (!fields) {
 			// Lots of cities contain ` or ' in the name and can't be parsed correctly with current method
-			console.warn('weird line: %s::', line);
+			console.warn('Weird line: %s::', line);
 			return;
 		}
 
@@ -544,19 +525,15 @@ function processCityDataNames(src, dest, cb) {
 	var datFile = fs.openSync(dataFile, 'w');
 
 	lazy(fs.createReadStream(tmpDataFile))
-	.lines
-	.map(function(byteArray) {
-		return iconv.decode(byteArray, 'utf-8');
-	})
-	.skip(1)
-	.map(processLine)
-	.on('pipe', cb);
+		.lines
+		.map(byteArray => iconv.decode(byteArray, 'utf-8'))
+		.skip(1)
+		.map(processLine)
+		.on('pipe', cb);
 }
 
 function processData(database, cb) {
-	if (database.skip) {
-		return cb(null, database);
-	}
+	if (database.skip) return cb(null, database);
 
 	const type = database.type;
 	const src = database.src;
@@ -591,10 +568,8 @@ function processData(database, cb) {
 }
 
 function updateChecksum(database, cb) {
-	if (database.skip || !database.checkValue) {
-		// Don't need to update checksums because it was not fetched or did not change
-		return cb();
-	}
+	if (database.skip || !database.checkValue) return cb(); // Don't need to update checksums because it was not fetched or did not change
+
 	fs.writeFile(path.join(dataPath, database.type + '.checksum'), database.checkValue, 'utf8', function(err) {
 		if (err) console.log(chalk.red('Failed to Update checksums.'), 'Database:', database.type);
 		cb();
@@ -606,19 +581,18 @@ if (!license_key) {
 	process.exit(1);
 }
 
-rimraf(tmpPath);
 mkdir(tmpPath);
 
-async.eachSeries(databases, function(database, nextDatabase) {
+async.eachSeries(databases, (database, nextDatabase) => {
 	async.seq(check, fetch, extract, processData, updateChecksum)(database, nextDatabase);
-}, function(err) {
+}, err => {
 	if (err) {
 		console.error(chalk.red('Failed to update databases from MaxMind.'), err);
 		process.exit(1);
 	} else {
 		console.log(chalk.green('Successfully updated databases from MaxMind.'));
 		if (args.indexOf('debug') !== -1) {
-			console.debug(chalk.yellow.bold('Notice: temporary files are not deleted for debug purposes.'));
+			console.debug(chalk.blue.bold('Notice: temporary files are not deleted for debug purposes.'));
 		} else {
 			rimraf(tmpPath);
 		}
