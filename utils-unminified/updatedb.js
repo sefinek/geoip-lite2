@@ -3,7 +3,7 @@
 'use strict';
 
 const { name, version } = require('../package.json');
-const userAgent = `Mozilla/5.0 (compatible; ${name}/${version}; +https://sefinek.net)`;
+const UserAgent = `Mozilla/5.0 (compatible; ${name}/${version}; +https://sefinek.net)`;
 
 const fs = require('node:fs');
 const http = require('node:http');
@@ -132,7 +132,7 @@ function CSVtoArray(text) {
 
 function getHTTPOptions(downloadUrl) {
 	const options = url.parse(downloadUrl);
-	options.headers = { 'User-Agent': userAgent };
+	options.headers = { 'User-Agent': UserAgent };
 
 	if (process.env.http_proxy || process.env.https_proxy) {
 		try {
@@ -181,11 +181,10 @@ function check(database, cb) {
 
 			response.on('end', () => {
 				if (str && str.length) {
-					if (str == database.checkValue) {
+					if (str === database.checkValue) {
 						console.log(chalk.green('Database "' + database.type + '" is up to date'));
 						database.skip = true;
-					}
-					else {
+					} else {
 						console.log(chalk.green('Database ' + database.type + ' has new data'));
 						database.checkValue = str;
 					}
@@ -379,9 +378,7 @@ function processCountryData(src, dest, cb) {
 function processCityData(src, dest, cb) {
 	let lines = 0;
 	function processLine(line) {
-		if (line.match(/^Copyright/) || !line.match(/\d/)) {
-			return;
-		}
+		if (line.match(/^Copyright/) || !line.match(/\d/)) return;
 
 		const fields = CSVtoArray(line);
 		if (!fields) {
