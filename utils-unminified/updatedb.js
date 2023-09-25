@@ -565,7 +565,7 @@ function processData(database, cb) {
 }
 
 function updateChecksum(database, cb) {
-	if (database.skip || !database.checkValue) return cb(); // Don't need to update checksums because it was not fetched or did not change
+	if (database.skip || !database.checkValue) return cb(); // Don't need to env.js checksums because it was not fetched or did not change
 
 	fs.writeFile(path.join(dataPath, database.type + '.checksum'), database.checkValue, 'utf8', function(err) {
 		if (err) console.log(chalk.red('Failed to Update checksums.'), 'Database:', database.type);
