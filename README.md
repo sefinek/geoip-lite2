@@ -134,7 +134,7 @@ If the IP address was found, the `lookup` method returns an object with the foll
 ```javascript
 {
    range: [ <low bound of IP block>, <high bound of IP block> ],
-   country: 'XX',                 // 2 letter ISO-3166-1 country code
+   country: 'CC',                 // 2 letter ISO-3166-1 country code
    region: 'RR',                  // Up to 3 alphanumeric variable length characters as ISO 3166-2 code
                                   // For US states this is the 2 letter state
                                   // For the United Kingdom this could be ENG as a country like “England
