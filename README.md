@@ -1,5 +1,7 @@
 <div align="center">
-    <img src="https://cdn.sefinek.net/images/npm/geoip-lite2/banner.jpg" alt="GeoIP-Lite2 v2.1 🗺️ Now even faster!">
+    <a href="https://cdn.sefinek.net/images/npm/geoip-lite2/banner.jpg" target="_blank" title="Full screen">
+        <img src="https://cdn.sefinek.net/images/npm/geoip-lite2/banner.jpg" alt="GeoIP-Lite2 v2.1 🗺️ Now even faster!">
+    </a>
     <br>    
     <p>
         A native <a href="https://nodejs.org" target="_blank" title="Open nodejs.org">Node.js</a> API for the GeoLite data from MaxMind.<br>
@@ -253,9 +255,9 @@ If your use-case requires doing less than 100 queries through the lifetime of yo
 
 🔖 References
 -------------
-    - <a href="http://www.maxmind.com/app/iso3166">Documentation from MaxMind</a>
-    - <a href="http://en.wikipedia.org/wiki/ISO_3166">ISO 3166 (1 & 2) codes</a>
-    - <a href="http://en.wikipedia.org/wiki/List_of_FIPS_region_codes">FIPS region codes</a>
+- <a href="http://www.maxmind.com/app/iso3166">Documentation from MaxMind</a>
+- <a href="http://en.wikipedia.org/wiki/ISO_3166">ISO 3166 (1 & 2) codes</a>
+- <a href="http://en.wikipedia.org/wiki/List_of_FIPS_region_codes">FIPS region codes</a>
 
 
 ©️ Copyright
