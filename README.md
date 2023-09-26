@@ -2,8 +2,8 @@
     <img src="https://cdn.sefinek.net/images/npm/geoip-lite2/banner.jpg" alt="GeoIP-Lite2 v2.1 🗺️ Now even faster!">
     <br>    
     <p>
-        A native <a href="https://nodejs.org" target="_blank" title="nodejs.org">Node.js</a> API for the GeoLite data from MaxMind.<br>
-        This product includes GeoLite data created by MaxMind, available from: https://www.maxmind.com
+        A native <a href="https://nodejs.org" target="_blank" title="Open nodejs.org">Node.js</a> API for the GeoLite data from MaxMind.<br>
+        This product includes GeoLite data created by MaxMind, available from: <a href="https://www.maxmind.com" target="_blank" title="Open www.maxmind.com">www.maxmind.com</a>
     </p>
     <a href="https://www.npmjs.com/package/geoip-lite2" target="_blank" title="geoip-lite2 - npm" style="text-decoration:none">
         <img src="https://img.shields.io/npm/dt/geoip-lite2?maxAge=3600" alt="The number of downloads">
