@@ -185,7 +185,7 @@ npm run updatedb-force license_key=YOUR_LICENSE_KEY
 ```
 
 You can also run it by doing:
-```bash
+```shell
 node ./node_modules/geoip-lite2/scripts/updatedb.js license_key=YOUR_LICENSE_KEY
 ```
 
