@@ -227,7 +227,7 @@ how busy your disk is at that time. It can take as little as 200ms on a lightly 
 cost though, and you make it up at run time with very fast lookups.
 
 ### Memory usage
-Quick test on memory consumption shows that library uses around 100Mb per process.
+Quick test on memory consumption shows that library uses around 100 MB per process.
 
 ```javascript
 const geoIp2 = require('geoip-lite2');

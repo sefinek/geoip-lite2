@@ -1,1 +1,1 @@
-const o=require('../lib/geoip.js').lookup('158.255.88.0');console.log(o);
+const o=require('../lib/geoip.js').lookup('86.63.89.41');console.log(o);
