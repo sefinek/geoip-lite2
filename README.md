@@ -255,9 +255,9 @@ If your use-case requires doing less than 100 queries through the lifetime of yo
 
 🔖 References
 -------------
-- <a href="http://www.maxmind.com/app/iso3166">Documentation from MaxMind</a>
-- <a href="http://en.wikipedia.org/wiki/ISO_3166">ISO 3166 (1 & 2) codes</a>
-- <a href="http://en.wikipedia.org/wiki/List_of_FIPS_region_codes">FIPS region codes</a>
+- [Documentation from MaxMind](https://www.maxmind.com/app/iso3166)
+- [ISO 3166 (1 & 2) codes](https://en.wikipedia.org/wiki/ISO_3166)
+- [FIPS region codes](https://en.wikipedia.org/wiki/List_of_FIPS_region_codes)
 
 
 ©️ Copyright
