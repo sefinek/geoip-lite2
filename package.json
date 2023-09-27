@@ -1,6 +1,6 @@
 {
   "name": "geoip-lite2",
-  "version": "2.1.9",
+  "version": "2.1.10",
   "description": "A light weight native JavaScript implementation of GeoIP API from MaxMind.",
   "keywords": [
     "city",
@@ -64,7 +64,7 @@
     "iconv-lite": "0.6.3",
     "ip-address": "^9.0.5",
     "lazy": "1.0.11",
-    "rimraf": "^5.0.4"
+    "rimraf": "^5.0.5"
   },
   "devDependencies": {
     "eslint": "^8.50.0",
