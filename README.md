@@ -36,7 +36,7 @@ This change enhances testing and contributes to the overall reliability of the m
 ----------------
 You can see this module in action on my [official API](https://sefinek.net). Generally speaking, the API interface is public, and you can safely use it in your projects. Happy coding!
 
-> Docs    : https://api.sefinek.net/docs/v2
+> Docs    : https://api.sefinek.net/docs/v2  
 > Example : https://api.sefinek.net/api/v2/geoip/109.207.159.255
 
 
