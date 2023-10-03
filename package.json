@@ -31,7 +31,7 @@
   },
   "license": "Apache-2.0",
   "author": "Philip Tellis <philip@bluesmoon.info> (https://bluesmoon.info)",
-  "main": "lib/geoip.js",
+  "main": "lib/main.js",
   "types": "index.d.ts",
   "directories": {
     "lib": "lib",

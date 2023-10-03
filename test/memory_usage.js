@@ -1,1 +1,1 @@
-require('../lib/geoip.js');console.log(process.memoryUsage());
+require('../lib/main.js');console.log(process.memoryUsage());

@@ -1,1 +1,1 @@
-const o=require('../lib/geoip.js');console.log(o.version);
+const o=require('../lib/main.js');console.log(o.version);

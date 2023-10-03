@@ -1,4 +1,4 @@
-const geoIp2 = require('../lib/geoip.js');
+const geoIp2 = require('../lib/main.js');
 
 describe('GeoIP2', () => {
 	describe('#testLookup()', () => {
