@@ -32,12 +32,17 @@ This change enhances testing and contributes to the overall reliability of the m
 > I am not the creator of this npm module! All copyright rights belong to its original [Creators](AUTHORS).
 
 
+🌠 Version without a local database
+-----------------------------------
+This module requires a significant amount of RAM because geolocation data is stored in memory. Nevertheless, you can always use the official and alternative [geoip2-api](https://www.npmjs.com/package/geoip2-api) module, which sends a request to the API server and retrieves information about a specific IP address from there.
+
+
 ✨ Demonstration
 ----------------
 You can see this module in action on my [official API](https://sefinek.net). Generally speaking, the API interface is public, and you can safely use it in your projects. Happy coding!
 
-> Endpoint : https://api.sefinek.net/api/v2/geoip/  
-> Example  : https://api.sefinek.net/api/v2/geoip/109.207.159.255
+> Docs: https://api.sefinek.net/docs/v2  
+> Example: https://api.sefinek.net/api/v2/geoip/109.207.159.255
 
 
 📑 Introduction

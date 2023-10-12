@@ -1,23 +1,22 @@
-const fs = require('node:fs'),
-	path = require('node:path'),
-	FSWatcher = {};
+const fs = require('node:fs');
+const path = require('node:path');
+const FSWatcher = {};
 
 /**
- * Takes a directory/file and watch for change. Upon change, call the
- * callback.
+ * Takes a directory/file and watch for change. Upon change, call the callback.
  *
  * @param name
  * @param directory
  * @param {String} [filename]: (optional) specific filename to watch for, watches for all files in the directory if unspecified
- * @param cooldownDelay
+ * @param cdDelay
  * @param callback
  **/
-function makeFsWatchFilter(name, directory, filename, cooldownDelay, callback) {
-	let cooldownId = null;
+function makeFsWatchFilter(name, directory, filename, cdDelay, callback) {
+	let cdId = null;
 
-	// Delete the cooldownId and callback the outer function
+	// Delete the cdId and callback the outer function
 	function timeoutCallback() {
-		cooldownId = null;
+		cdId = null;
 		callback();
 	}
 
@@ -25,34 +24,32 @@ function makeFsWatchFilter(name, directory, filename, cooldownDelay, callback) {
 	// It sets a timer to wait for the change to be completed
 	function onWatchEvent(event, changedFile) {
 		// Check to make sure changedFile is not null
-		if (!changedFile) {
-			return;
-		}
+		if (!changedFile) return;
 
 		const filePath = path.join(directory, changedFile);
 		if (!filename || filename === changedFile) {
-			fs.exists(filePath, function onExists(exists) {
-				if (!exists) return; // If the changed file no longer exists, it was a deletion. We ignore deleted files.
+			fs.access(filePath, fs.constants.F_OK, err => {
+				if (err) return console.error(err);
 
 				// At this point, a new file system activity has been detected,
 				// We have to wait for file transfer to be finished before moving on.
 
-				// If a cooldownId already exists, we delete it
-				if (cooldownId !== null) {
-					clearTimeout(cooldownId);
-					cooldownId = null;
+				// If a cdId already exists, we delete it
+				if (cdId !== null) {
+					clearTimeout(cdId);
+					cdId = null;
 				}
 
-				// Once the cooldownDelay has passed, the timeoutCallback function will be called
-				cooldownId = setTimeout(timeoutCallback, cooldownDelay);
+				// Once the cdDelay has passed, the timeoutCallback function will be called
+				cdId = setTimeout(timeoutCallback, cdDelay);
 			});
 		}
 	}
 
 	// Manage the case where filename is missing (because it's optional)
-	if (typeof cooldownDelay === 'function') {
-		callback = cooldownDelay;
-		cooldownDelay = filename;
+	if (typeof cdDelay === 'function') {
+		callback = cdDelay;
+		cdDelay = filename;
 		filename = null;
 	}
 

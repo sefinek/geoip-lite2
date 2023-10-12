@@ -1,1 +1,1 @@
-const o=require('../lib/geoip.js').lookup('86.63.89.41');console.log(o);
+const a=require('../lib/main.js'),n=async()=>{const n=a.lookup('86.63.89.41');console.log(n)};setInterval((async()=>{await n()}),2e3),(async()=>{await n()})();
