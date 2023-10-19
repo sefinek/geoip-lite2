@@ -1,1 +1,0 @@
-const o=require('../lib/main.js');console.log(o.version);
