@@ -87,9 +87,7 @@ const lookup4 = ip => {
 
 	// Private IP
 	for (i = 0; i < privateRange.length; i++) {
-		if (ip >= privateRange[i][0] && ip <= privateRange[i][1]) {
-			return null;
-		}
+		if (ip >= privateRange[i][0] && ip <= privateRange[i][1]) return null;
 	}
 
 	do {

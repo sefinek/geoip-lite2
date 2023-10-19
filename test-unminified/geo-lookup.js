@@ -32,7 +32,6 @@ for (let i = 0; i < n; i++) {
 	}
 
 	r = geoIp2.lookup(ip);
-
 	if (r === null) {
 		nf.push(ip);
 		continue;
