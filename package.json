@@ -32,7 +32,7 @@
   "license": "Apache-2.0",
   "author": "Philip Tellis <philip@bluesmoon.info> (https://bluesmoon.info)",
   "main": "lib/main.js",
-  "types": "index.d.ts",
+  "typings": "index.d.ts",
   "directories": {
     "lib": "lib",
     "test": "test"
