@@ -1,23 +1,30 @@
 declare module 'geoip-lite2' {
-    export const cmp: number | any | null
+    export const cmp: number | any | null;
 
-    export type GeoData = {
+    interface GeoIp2Location {
         range: [number, number];
         country: string;
         region: string;
-        eu: string;
+        eu: '0' | '1';
         timezone: string;
         city: string;
         ll: [number, number];
         metro: number;
         area: number;
+    }
+
+    function lookup(ip: string): GeoIp2Location | null;
+    function pretty(ip: string | number): string;
+
+    function reloadDataSync(): void;
+    function reloadData(callback: () => void): void;
+    function startWatchingDataUpdate(): void;
+
+    export {
+        lookup,
+        pretty,
+        reloadDataSync,
+        reloadData,
+        startWatchingDataUpdate,
     };
-
-    export function lookup(ip: string): GeoData | null;
-
-    export const pretty: (n: string | number | number[]) => string;
-    export const startWatchingDataUpdate: (callback: () => void) => void;
-    export const reloadDataSync: () => void;
-    export const reloadData: (callback: () => void) => void;
-    export const version: string;
 }
