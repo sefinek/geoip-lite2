@@ -103,15 +103,18 @@ const lookup4 = ip => {
 			} else {
 				locId = buffer.readUInt32BE((line * recordSize) + 8);
 
-				geoData.country = locBuffer.toString('utf8', (locId * locRecordSize), (locId * locRecordSize) + 2).replace(/\u0000.*/, '');
-				geoData.region = locBuffer.toString('utf8', (locId * locRecordSize) + 2, (locId * locRecordSize) + 5).replace(/\u0000.*/, '');
-				geoData.metro = locBuffer.readInt32BE((locId * locRecordSize) + 5);
-				geoData.ll[0] = buffer.readInt32BE((line * recordSize) + 12) / 10000;// latitude
-				geoData.ll[1] = buffer.readInt32BE((line * recordSize) + 16) / 10000; // longitude
-				geoData.area = buffer.readUInt32BE((line * recordSize) + 20); // longitude
-				geoData.eu = locBuffer.toString('utf8', (locId * locRecordSize) + 9, (locId * locRecordSize) + 10).replace(/\u0000.*/, '');
-				geoData.timezone = locBuffer.toString('utf8', (locId * locRecordSize) + 10, (locId * locRecordSize) + 42).replace(/\u0000.*/, '');
-				geoData.city = locBuffer.toString('utf8', (locId * locRecordSize) + 42, (locId * locRecordSize) + locRecordSize).replace(/\u0000.*/, '');
+				// -1>>>0 is a marker for "No Location Info"
+				if (-1 >>> 0 > locId) {
+					geoData.country = locBuffer.toString('utf8', (locId * locRecordSize), (locId * locRecordSize) + 2).replace(/\u0000.*/, '');
+					geoData.region = locBuffer.toString('utf8', (locId * locRecordSize) + 2, (locId * locRecordSize) + 5).replace(/\u0000.*/, '');
+					geoData.metro = locBuffer.readInt32BE((locId * locRecordSize) + 5);
+					geoData.ll[0] = buffer.readInt32BE((line * recordSize) + 12) / 10000;// latitude
+					geoData.ll[1] = buffer.readInt32BE((line * recordSize) + 16) / 10000; // longitude
+					geoData.area = buffer.readUInt32BE((line * recordSize) + 20); // longitude
+					geoData.eu = locBuffer.toString('utf8', (locId * locRecordSize) + 9, (locId * locRecordSize) + 10).replace(/\u0000.*/, '');
+					geoData.timezone = locBuffer.toString('utf8', (locId * locRecordSize) + 10, (locId * locRecordSize) + 42).replace(/\u0000.*/, '');
+					geoData.city = locBuffer.toString('utf8', (locId * locRecordSize) + 42, (locId * locRecordSize) + locRecordSize).replace(/\u0000.*/, '');
+				}
 			}
 
 			return geoData;
@@ -180,15 +183,18 @@ const lookup6 = ip => {
 			} else {
 				locId = buffer.readUInt32BE((line * recordSize) + 32);
 
-				geoData.country = locBuffer.toString('utf8', (locId * locRecordSize), (locId * locRecordSize) + 2).replace(/\u0000.*/, '');
-				geoData.region = locBuffer.toString('utf8', (locId * locRecordSize) + 2, (locId * locRecordSize) + 5).replace(/\u0000.*/, '');
-				geoData.metro = locBuffer.readInt32BE((locId * locRecordSize) + 5);
-				geoData.ll[0] = buffer.readInt32BE((line * recordSize) + 36) / 10000;// latitude
-				geoData.ll[1] = buffer.readInt32BE((line * recordSize) + 40) / 10000; // longitude
-				geoData.area = buffer.readUInt32BE((line * recordSize) + 44); // area
-				geoData.eu = locBuffer.toString('utf8', (locId * locRecordSize) + 9, (locId * locRecordSize) + 10).replace(/\u0000.*/, '');
-				geoData.timezone = locBuffer.toString('utf8', (locId * locRecordSize) + 10, (locId * locRecordSize) + 42).replace(/\u0000.*/, '');
-				geoData.city = locBuffer.toString('utf8', (locId * locRecordSize) + 42, (locId * locRecordSize) + locRecordSize).replace(/\u0000.*/, '');
+				// -1>>>0 is a marker for "No Location Info"
+				if (-1 >>> 0 > locId) {
+					geoData.country = locBuffer.toString('utf8', (locId * locRecordSize), (locId * locRecordSize) + 2).replace(/\u0000.*/, '');
+					geoData.region = locBuffer.toString('utf8', (locId * locRecordSize) + 2, (locId * locRecordSize) + 5).replace(/\u0000.*/, '');
+					geoData.metro = locBuffer.readInt32BE((locId * locRecordSize) + 5);
+					geoData.ll[0] = buffer.readInt32BE((line * recordSize) + 36) / 10000;// latitude
+					geoData.ll[1] = buffer.readInt32BE((line * recordSize) + 40) / 10000; // longitude
+					geoData.area = buffer.readUInt32BE((line * recordSize) + 44); // area
+					geoData.eu = locBuffer.toString('utf8', (locId * locRecordSize) + 9, (locId * locRecordSize) + 10).replace(/\u0000.*/, '');
+					geoData.timezone = locBuffer.toString('utf8', (locId * locRecordSize) + 10, (locId * locRecordSize) + 42).replace(/\u0000.*/, '');
+					geoData.city = locBuffer.toString('utf8', (locId * locRecordSize) + 42, (locId * locRecordSize) + locRecordSize).replace(/\u0000.*/, '');
+				}
 			}
 			// We do not currently have detailed region/city info for IPv6, but finally have coords
 			return geoData;

@@ -11,6 +11,7 @@ const https = require('node:https');
 const path = require('node:path');
 const url = require('node:url');
 const zlib = require('node:zlib');
+const readline = require('readline');
 
 fs.existsSync = fs.existsSync || path.existsSync;
 
@@ -30,7 +31,7 @@ let license_key = args.find(function(arg) {
 if (typeof license_key === 'undefined' && typeof process.env.LICENSE_KEY !== 'undefined') {
 	license_key = 'license_key=' + process.env.LICENSE_KEY;
 }
-let geoDataDir = args.find(function(arg) {
+let geoDataDir = args.find(arg => {
 	return arg.match(/^geoDataDir=[\w./]+/) !== null;
 });
 if (typeof geoDataDir === 'undefined' && typeof process.env.GEODATADIR !== 'undefined') {
@@ -46,7 +47,7 @@ if (typeof geoDataDir !== 'undefined') {
 }
 const tmpPath = process.env.GEOTMPDIR ? process.env.GEOTMPDIR : path.resolve(__dirname, '..', 'tmp');
 const countryLookup = {};
-const cityLookup = {};
+const cityLookup = { NaN: -1 };
 const databases = [{
 	type: 'country',
 	url: 'https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-Country-CSV&suffix=zip&' + license_key,
@@ -156,7 +157,6 @@ function check(database, cb) {
 	}
 
 	const checksumUrl = database.checksum;
-
 	if (typeof checksumUrl === 'undefined') return cb(null, database); // No checksum url to check, skipping
 
 	// Read existing checksum file
@@ -296,15 +296,12 @@ function processLookupCountry(src, cb) {
 		});
 }
 
-function processCountryData(src, dest, cb) {
+async function processCountryData(src, dest) {
 	let lines = 0;
 	function processLine(line) {
 		const fields = CSVtoArray(line);
+		if (!fields || fields.length < 6) return console.warn('weird line: %s::', line);
 
-		if (!fields || fields.length < 6) {
-			console.warn('weird line: %s::', line);
-			return;
-		}
 		lines++;
 
 		let sip;
@@ -345,11 +342,17 @@ function processCountryData(src, dest, cb) {
 			}
 
 			b.write(cc, bsz - 2);
-
-			fs.writeSync(datFile, b, 0, bsz, null);
 			if (Date.now() - tstart > 5000) {
 				tstart = Date.now();
 				process.stdout.write('\nStill working (' + lines + ')...');
+			}
+
+			if (datFile._writableState.needDrain) {
+				return new Promise(resolve => {
+					datFile.write(b, resolve);
+				});
+			} else {
+				return datFile.write(b);
 			}
 		}
 	}
@@ -360,31 +363,28 @@ function processCountryData(src, dest, cb) {
 	rimraf(dataFile);
 	mkdir(dataFile);
 
-	process.stdout.write('Processing data (may take a moment)...');
+	process.stdout.write('Processing Data (may take a moment) ...');
 	var tstart = Date.now();
-	var datFile = fs.openSync(dataFile, 'w');
+	var datFile = fs.createWriteStream(dataFile);
 
-	lazy(fs.createReadStream(tmpDataFile))
-		.lines
-		.map(byteArray => iconv.decode(byteArray, 'latin1'))
-		.skip(1)
-		.map(processLine)
-		.on('pipe', () => {
-			console.log(chalk.green(' DONE'));
-			cb();
-		});
+	const rl = readline.createInterface({ input: fs.createReadStream(tmpDataFile), crlfDelay: Infinity });
+	let i = 0;
+	for await (const line of rl) {
+		i++;
+		if (i === 1) continue;
+		await processLine(line);
+	}
+	datFile.close();
+	console.log(' DONE'.green);
 }
 
-function processCityData(src, dest, cb) {
+async function processCityData(src, dest) {
 	let lines = 0;
-	function processLine(line) {
+	async function processLine(line) {
 		if (line.match(/^Copyright/) || !line.match(/\d/)) return;
 
 		const fields = CSVtoArray(line);
-		if (!fields) {
-			console.warn('Weird line: %s::', line);
-			return;
-		}
+		if (!fields) return console.warn('Weird line: %s::', line);
 		let sip;
 		let eip;
 		let rngip;
@@ -452,10 +452,17 @@ function processCityData(src, dest, cb) {
 			b.writeInt32BE(area, 20);
 		}
 
-		fs.writeSync(datFile, b, 0, b.length, null);
 		if (Date.now() - tstart > 5000) {
 			tstart = Date.now();
 			process.stdout.write('\nStill working (' + lines + ')...');
+		}
+
+		if (datFile._writableState.needDrain) {
+			return new Promise((resolve) => {
+				datFile.write(b, resolve);
+			});
+		} else {
+			return datFile.write(b);
 		}
 	}
 
@@ -466,14 +473,19 @@ function processCityData(src, dest, cb) {
 
 	process.stdout.write('Processing data (may take a moment) ...');
 	var tstart = Date.now();
-	var datFile = fs.openSync(dataFile, 'w');
+	var datFile = fs.createWriteStream(dataFile);
 
-	lazy(fs.createReadStream(tmpDataFile))
-		.lines
-		.map(byteArray => iconv.decode(byteArray, 'latin1'))
-		.skip(1)
-		.map(processLine)
-		.on('pipe', cb);
+	const rl = readline.createInterface({
+		input: fs.createReadStream(tmpDataFile),
+		crlfDelay: Infinity,
+	});
+	let i = 0;
+	for await (const line of rl) {
+		i++;
+		if (i === 1) continue;
+		await processLine(line);
+	}
+	datFile.close();
 }
 
 function processCityDataNames(src, dest, cb) {
@@ -539,10 +551,10 @@ function processData(database, cb) {
 	if (type === 'country') {
 		if (Array.isArray(src)) {
 			processLookupCountry(src[0], () => {
-				processCountryData(src[1], dest[1], () => {
-					processCountryData(src[2], dest[2], () => {
-						cb(null, database);
-					});
+				processCountryData(src[1], dest[1]).then(() => {
+					return processCountryData(src[2], dest[2]);
+				}).then(() => {
+					cb(null, database);
 				});
 			});
 		}
@@ -553,19 +565,19 @@ function processData(database, cb) {
 		}
 	} else if (type === 'city') {
 		processCityDataNames(src[0], dest[0], () => {
-			processCityData(src[1], dest[1], () => {
-				console.log('city data processed');
-				processCityData(src[2], dest[2], () => {
-					console.log(chalk.green(' DONE'));
-					cb(null, database);
-				});
+			processCityData(src[1], dest[1]).then(() => {
+				console.log('City data processed');
+				return processCityData(src[2], dest[2]);
+			}).then(() => {
+				console.log(chalk.green(' DONE'));
+				cb(null, database);
 			});
 		});
 	}
 }
 
 function updateChecksum(database, cb) {
-	if (database.skip || !database.checkValue) return cb(); // Don't need to env.js checksums because it was not fetched or did not change
+	if (database.skip || !database.checkValue) return cb(); // Don't need to update checksums because it was not fetched or did not change
 
 	fs.writeFile(path.join(dataPath, database.type + '.checksum'), database.checkValue, 'utf8', function(err) {
 		if (err) console.log(chalk.red('Failed to Update checksums.'), 'Database:', database.type);
@@ -578,6 +590,7 @@ if (!license_key) {
 	process.exit(1);
 }
 
+rimraf(tmpPath);
 mkdir(tmpPath);
 
 async.eachSeries(databases, (database, nextDatabase) => {
