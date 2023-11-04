@@ -33,7 +33,7 @@ describe('GeoIP2', () => {
 			const actual = geoIp2.lookup('210.138.184.59');
 			expect(actual.range !== undefined).toBe(true);
 			expect(actual.country).toBe('JP');
-			expect(actual.region).toBe('');
+			expect(actual.region).toBe('13');
 			expect(actual.eu).toBe('0');
 			expect(actual.timezone).toBe('Asia/Tokyo');
 			expect(actual.city).toBe('');
