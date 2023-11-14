@@ -39,7 +39,7 @@ describe('GeoIP2', () => {
 			expect(actual.city).toBe('');
 			expect(actual.ll).toBeTruthy();
 			expect(actual.metro).toBe(0);
-			expect(actual.area).toBe(200);
+			expect(actual.area).toBe(500);
 		});
 
 		it('should match data for IPv4 - PL', () => {
@@ -114,7 +114,7 @@ describe('GeoIP2', () => {
 	describe('#testUTF8()', () => {
 		it('should return UTF8 city name', () => {
 			const ip = '2.139.175.1';
-			const expected = 'Barbera Del Valles';
+			const expected = 'Madrid';
 			const actual = geoIp2.lookup(ip);
 			expect(actual).toBeTruthy();
 			expect(actual.city).toBe(expected);
