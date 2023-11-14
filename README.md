@@ -1,6 +1,6 @@
 <div align="center">
     <a href="https://cdn.sefinek.net/images/npm/geoip-lite2/banner.jpg" target="_blank" title="Full screen">
-        <img src="https://cdn.sefinek.net/images/npm/geoip-lite2/banner.jpg" alt="GeoIP-Lite 2.1 🗺️ Now even faster!">
+        <img src="https://cdn.sefinek.net/images/npm/geoip-lite2/banner.png" alt="GeoIP-Lite v2.1 banner">
     </a>
     <br>    
     <p>
