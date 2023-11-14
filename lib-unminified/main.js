@@ -1,6 +1,6 @@
-const fs = require('node:fs');
-const net = require('node:net');
-const path = require('node:path');
+const fs = require('fs');
+const net = require('net');
+const path = require('path');
 const async = require('async');
 const utils = require('./utils.js');
 const fsWatcher = require('./fsWatcher.js');
@@ -81,9 +81,7 @@ const lookup4 = ip => {
 	};
 
 	// Outside IPv4 range
-	if (ip > cache4.lastIP || ip < cache4.firstIP) {
-		return null;
-	}
+	if (ip > cache4.lastIP || ip < cache4.firstIP) return null;
 
 	// Private IP
 	for (i = 0; i < privateRange.length; i++) {
@@ -168,9 +166,7 @@ const lookup6 = ip => {
 	let line;
 	let locId;
 
-	if (utils.cmp6(ip, cache6.lastIP) > 0 || utils.cmp6(ip, cache6.firstIP) < 0) {
-		return null;
-	}
+	if (utils.cmp6(ip, cache6.lastIP) > 0 || utils.cmp6(ip, cache6.firstIP) < 0) return null;
 
 	do {
 		line = Math.round((cline - fline) / 2) + fline;
@@ -219,9 +215,7 @@ const get4mapped = ip => {
 	const v6prefixes = ['0:0:0:0:0:FFFF:', '::FFFF:'];
 	for (let i = 0; i < v6prefixes.length; i++) {
 		const v6prefix = v6prefixes[i];
-		if (ipv6.indexOf(v6prefix) === 0) {
-			return ipv6.substring(v6prefix.length);
-		}
+		if (ipv6.indexOf(v6prefix) === 0) return ipv6.substring(v6prefix.length);
 	}
 	return null;
 };

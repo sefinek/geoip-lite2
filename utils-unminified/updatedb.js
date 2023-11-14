@@ -5,12 +5,11 @@
 const { name, version } = require('../package.json');
 const UserAgent = `Mozilla/5.0 (compatible; ${name}/${version}; +https://sefinek.net)`;
 
-const fs = require('node:fs');
-const http = require('node:http');
-const https = require('node:https');
-const path = require('node:path');
-const url = require('node:url');
-const zlib = require('node:zlib');
+const fs = require('fs');
+const http = require('http');
+const https = require('https');
+const path = require('path');
+const zlib = require('zlib');
 const readline = require('readline');
 
 fs.existsSync = fs.existsSync || path.existsSync;
@@ -18,24 +17,23 @@ fs.existsSync = fs.existsSync || path.existsSync;
 const async = require('async');
 const chalk = require('chalk');
 const iconv = require('iconv-lite');
-const lazy = require('lazy');
 const rimraf = require('rimraf').sync;
 const AdmZip = require('adm-zip');
 const utils = require('../lib/utils.js');
 const { Address6, Address4 } = require('ip-address');
 
 const args = process.argv.slice(2);
-let license_key = args.find(function(arg) {
+let license_key = args.find(arg => {
 	return arg.match(/^license_key=[a-zA-Z0-9]+/) !== null;
 });
 if (typeof license_key === 'undefined' && typeof process.env.LICENSE_KEY !== 'undefined') {
-	license_key = 'license_key=' + process.env.LICENSE_KEY;
+	license_key = `license_key=${process.env.LICENSE_KEY}`;
 }
 let geoDataDir = args.find(arg => {
 	return arg.match(/^geoDataDir=[\w./]+/) !== null;
 });
 if (typeof geoDataDir === 'undefined' && typeof process.env.GEODATADIR !== 'undefined') {
-	geoDataDir = 'geoDataDir=' + process.env.GEODATADIR;
+	geoDataDir = `geoDataDir=${process.env.GEODATADIR}`;
 }
 let dataPath = path.resolve(__dirname, '..', 'data');
 if (typeof geoDataDir !== 'undefined') {
@@ -50,34 +48,27 @@ const countryLookup = {};
 const cityLookup = { NaN: -1 };
 const databases = [{
 	type: 'country',
-	url: 'https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-Country-CSV&suffix=zip&' + license_key,
-	checksum: 'https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-Country-CSV&suffix=zip.sha256&' + license_key,
+	url: `https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-Country-CSV&suffix=zip&${license_key}`,
+	checksum: `https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-Country-CSV&suffix=zip.sha256&${license_key}`,
 	fileName: 'GeoLite2-Country-CSV.zip',
 	src: [
 		'GeoLite2-Country-Locations-en.csv',
 		'GeoLite2-Country-Blocks-IPv4.csv',
 		'GeoLite2-Country-Blocks-IPv6.csv',
 	],
-	dest: [
-		'',
-		'geoip-country.dat',
-		'geoip-country6.dat',
-	],
-}, {
+	dest: ['', 'geoip-country.dat', 'geoip-country6.dat'],
+},
+{
 	type: 'city',
-	url: 'https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-City-CSV&suffix=zip&' + license_key,
-	checksum: 'https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-City-CSV&suffix=zip.sha256&' + license_key,
+	url: `https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-City-CSV&suffix=zip&${license_key}`,
+	checksum: `https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-City-CSV&suffix=zip.sha256&${license_key}`,
 	fileName: 'GeoLite2-City-CSV.zip',
 	src: [
 		'GeoLite2-City-Locations-en.csv',
 		'GeoLite2-City-Blocks-IPv4.csv',
 		'GeoLite2-City-Blocks-IPv6.csv',
 	],
-	dest: [
-		'geoip-city-names.dat',
-		'geoip-city.dat',
-		'geoip-city6.dat',
-	],
+	dest: ['geoip-city-names.dat', 'geoip-city.dat', 'geoip-city6.dat'],
 }];
 
 function mkdir(dirName) {
@@ -86,7 +77,6 @@ function mkdir(dirName) {
 }
 
 // Ref: http://stackoverflow.com/questions/8493195/how-can-i-parse-a-csv-string-with-javascript
-// Return array of string values, or NULL if CSV string not well-formed.
 // Return array of string values, or NULL if CSV string not well-formed.
 
 function tryFixingLine(line) {
@@ -108,9 +98,10 @@ function tryFixingLine(line) {
 	return line;
 }
 
+const re_valid = /^\s*(?:'[^'\\]*(?:\\[\S\s][^'\\]*)*'|"[^"\\]*(?:\\[\S\s][^"\\]*)*"|[^,'"\s\\]*(?:\s+[^,'"\s\\]+)*)\s*(?:,\s*(?:'[^'\\]*(?:\\[\S\s][^'\\]*)*'|"[^"\\]*(?:\\[\S\s][^"\\]*)*"|[^,'"\s\\]*(?:\s+[^,'"\s\\]+)*)\s*)*$/;
+const re_value = /(?!\s*$)\s*(?:'([^'\\]*(?:\\[\S\s][^'\\]*)*)'|"([^"\\]*(?:\\[\S\s][^"\\]*)*)"|([^,'"\s\\]*(?:\s+[^,'"\s\\]+)*))\s*(?:,|$)/g;
+
 function CSVtoArray(text) {
-	const re_valid = /^\s*(?:'[^'\\]*(?:\\[\S\s][^'\\]*)*'|"[^"\\]*(?:\\[\S\s][^"\\]*)*"|[^,'"\s\\]*(?:\s+[^,'"\s\\]+)*)\s*(?:,\s*(?:'[^'\\]*(?:\\[\S\s][^'\\]*)*'|"[^"\\]*(?:\\[\S\s][^"\\]*)*"|[^,'"\s\\]*(?:\s+[^,'"\s\\]+)*)\s*)*$/;
-	const re_value = /(?!\s*$)\s*(?:'([^'\\]*(?:\\[\S\s][^'\\]*)*)'|"([^"\\]*(?:\\[\S\s][^"\\]*)*)"|([^,'"\s\\]*(?:\s+[^,'"\s\\]+)*))\s*(?:,|$)/g;
 	// Return NULL if input string is not well-formed CSV string.
 	if (!re_valid.test(text)) {
 		text = tryFixingLine(text);
@@ -118,7 +109,7 @@ function CSVtoArray(text) {
 	}
 	const a = []; // Initialize array to receive values.
 	text.replace(re_value, // "Walk" the string using replace with callback.
-		function(m0, m1, m2, m3) {
+		(m0, m1, m2, m3) => {
 			// Remove backslash from \' in single quoted values.
 			if (m1 !== undefined) a.push(m1.replace(/\\'/g, '\''));
 			// Remove backslash from \" in double-quoted values.
@@ -132,12 +123,17 @@ function CSVtoArray(text) {
 }
 
 function getHTTPOptions(downloadUrl) {
-	const options = url.parse(downloadUrl);
-	options.headers = { 'User-Agent': UserAgent };
+	const parsedUrl = new URL(downloadUrl);
+	const options = {
+		protocol: parsedUrl.protocol,
+		host: parsedUrl.host,
+		path: parsedUrl.pathname + parsedUrl.search,
+		headers: { 'User-Agent': UserAgent },
+	};
 
 	if (process.env.http_proxy || process.env.https_proxy) {
 		try {
-			const HttpsProxyAgent = require('node:https-proxy-agent');
+			const HttpsProxyAgent = require('https-proxy-agent');
 			options.agent = new HttpsProxyAgent(process.env.http_proxy || process.env.https_proxy);
 		}
 		catch (e) {
@@ -160,10 +156,10 @@ function check(database, cb) {
 	if (typeof checksumUrl === 'undefined') return cb(null, database); // No checksum url to check, skipping
 
 	// Read existing checksum file
-	fs.readFile(path.join(dataPath, database.type + '.checksum'), { encoding: 'utf8' }, function(err, data) {
+	fs.readFile(path.join(dataPath, `${database.type}.checksum`), { encoding: 'utf8' }, (err, data) => {
 		if (!err && data && data.length) database.checkValue = data;
 
-		console.log('Checking ', database.fileName);
+		console.log('Checking', database.fileName);
 
 		function onResponse(response) {
 			const status = response.statusCode;
@@ -175,7 +171,7 @@ function check(database, cb) {
 			}
 
 			let str = '';
-			response.on('data', function(chunk) {
+			response.on('data', chunk => {
 				str += chunk;
 			});
 
@@ -214,7 +210,7 @@ function fetch(database, cb) {
 	const tmpFile = path.join(tmpPath, fileName);
 	if (fs.existsSync(tmpFile)) return cb(null, tmpFile, fileName, database);
 
-	console.log('Fetching ', fileName);
+	console.log('Fetching', fileName);
 
 	function onResponse(response) {
 		const status = response.statusCode;
@@ -244,7 +240,7 @@ function fetch(database, cb) {
 
 	var client = https.get(getHTTPOptions(downloadUrl), onResponse);
 
-	process.stdout.write('Retrieving ' + fileName + '...');
+	process.stdout.write(`Retrieving ${fileName}...`);
 }
 
 function extract(tmpFile, tmpFileName, database, cb) {
@@ -276,24 +272,27 @@ function processLookupCountry(src, cb) {
 	function processLine(line) {
 		const fields = CSVtoArray(line);
 		if (!fields || fields.length < 6) {
-			console.log('weird line: %s::', line);
+			console.log('Weird line: %s::', line);
 			return;
 		}
 		countryLookup[fields[0]] = fields[4];
 	}
 	const tmpDataFile = path.join(tmpPath, src);
 
-	process.stdout.write('Processing Lookup Data (may take a moment)...');
+	process.stdout.write('Processing lookup data (may take a moment)...');
 
-	lazy(fs.createReadStream(tmpDataFile))
-		.lines
-		.map(byteArray => iconv.decode(byteArray, 'latin1'))
-		.skip(1)
-		.map(processLine)
-		.on('pipe', () => {
-			console.log(chalk.green(' DONE'));
-			cb();
-		});
+	const rl = readline.createInterface({ input: fs.createReadStream(tmpDataFile).pipe(iconv.decodeStream('latin1')), output: process.stdout, terminal: false });
+
+	let lineCount = 0;
+	rl.on('line', line => {
+		if (lineCount > 0) processLine(line);
+		lineCount++;
+	});
+
+	rl.on('close', () => {
+		console.log(chalk.green(' DONE'));
+		cb();
+	});
 }
 
 async function processCountryData(src, dest) {
@@ -363,7 +362,7 @@ async function processCountryData(src, dest) {
 	rimraf(dataFile);
 	mkdir(dataFile);
 
-	process.stdout.write('Processing Data (may take a moment) ...');
+	process.stdout.write('\nProcessing data (may take a moment)...');
 	var tstart = Date.now();
 	var datFile = fs.createWriteStream(dataFile);
 
@@ -375,7 +374,7 @@ async function processCountryData(src, dest) {
 		await processLine(line);
 	}
 	datFile.close();
-	console.log(' DONE'.green);
+	console.log(chalk.green(' DONE'));
 }
 
 async function processCityData(src, dest) {
@@ -471,14 +470,11 @@ async function processCityData(src, dest) {
 
 	rimraf(dataFile);
 
-	process.stdout.write('Processing data (may take a moment) ...');
+	process.stdout.write('\nProcessing data (may take a moment)...');
 	var tstart = Date.now();
 	var datFile = fs.createWriteStream(dataFile);
 
-	const rl = readline.createInterface({
-		input: fs.createReadStream(tmpDataFile),
-		crlfDelay: Infinity,
-	});
+	const rl = readline.createInterface({ input: fs.createReadStream(tmpDataFile), crlfDelay: Infinity });
 	let i = 0;
 	for await (const line of rl) {
 		i++;
@@ -533,12 +529,16 @@ function processCityDataNames(src, dest, cb) {
 
 	var datFile = fs.openSync(dataFile, 'w');
 
-	lazy(fs.createReadStream(tmpDataFile))
-		.lines
-		.map(byteArray => iconv.decode(byteArray, 'utf-8'))
-		.skip(1)
-		.map(processLine)
-		.on('pipe', cb);
+	const rl = readline.createInterface({ input: fs.createReadStream(tmpDataFile).pipe(iconv.decodeStream('utf-8')), output: process.stdout, terminal: false });
+
+	let lineCount = 0;
+	rl.on('line', line => {
+		if (lineCount > 0) processLine(line);
+
+		lineCount++;
+	});
+
+	rl.on('close', cb);
 }
 
 function processData(database, cb) {
@@ -579,14 +579,14 @@ function processData(database, cb) {
 function updateChecksum(database, cb) {
 	if (database.skip || !database.checkValue) return cb(); // Don't need to update checksums because it was not fetched or did not change
 
-	fs.writeFile(path.join(dataPath, database.type + '.checksum'), database.checkValue, 'utf8', function(err) {
-		if (err) console.log(chalk.red('Failed to Update checksums.'), 'Database:', database.type);
+	fs.writeFile(path.join(dataPath, database.type + '.checksum'), database.checkValue, 'utf8', err => {
+		if (err) console.log(chalk.red('Failed to Update checksums!'), 'Database:', database.type);
 		cb();
 	});
 }
 
 if (!license_key) {
-	console.error(chalk.red('ERROR') + ': Missing license_key');
+	console.error(chalk.red('ERROR:'), 'Missing license_key');
 	process.exit(1);
 }
 
@@ -597,12 +597,12 @@ async.eachSeries(databases, (database, nextDatabase) => {
 	async.seq(check, fetch, extract, processData, updateChecksum)(database, nextDatabase);
 }, err => {
 	if (err) {
-		console.error(chalk.red('Failed to update databases from MaxMind.'), err);
+		console.error(chalk.red('Failed to update databases from MaxMind'), err);
 		process.exit(1);
 	} else {
-		console.log(chalk.green('Successfully updated databases from MaxMind.'));
+		console.log(chalk.green('Successfully updated databases from MaxMind'));
 		if (args.indexOf('debug') !== -1) {
-			console.debug(chalk.blue.bold('Notice: temporary files are not deleted for debug purposes.'));
+			console.debug(chalk.blue.bold('Notice: temporary files are not deleted for debug purposes'));
 		} else {
 			rimraf(tmpPath);
 		}
