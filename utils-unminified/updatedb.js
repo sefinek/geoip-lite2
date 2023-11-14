@@ -566,7 +566,7 @@ function processData(database, cb) {
 	} else if (type === 'city') {
 		processCityDataNames(src[0], dest[0], () => {
 			processCityData(src[1], dest[1]).then(() => {
-				console.log('City data processed');
+				console.log('\nCity data processed');
 				return processCityData(src[2], dest[2]);
 			}).then(() => {
 				console.log(chalk.green(' DONE'));
