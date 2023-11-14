@@ -276,7 +276,7 @@ If your use-case requires doing less than 100 queries through the lifetime of yo
 - [FIPS region codes](https://en.wikipedia.org/wiki/List_of_FIPS_region_codes)
 
 
-©️ Copyright
+👥 Copyright
 ------------
 `GeoIP-Lite` is Copyright 2011-2018 **Philip Tellis** <philip@bluesmoon.info>  
 `GeoIP-Lite2` is Copyright 2023 **Sefinek** <contact@sefinek.net> (https://sefinek.net)
