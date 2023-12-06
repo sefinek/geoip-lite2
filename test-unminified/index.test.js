@@ -39,7 +39,7 @@ describe('GeoIP2', () => {
 			expect(actual.city).toBe('');
 			expect(actual.ll).toBeTruthy();
 			expect(actual.metro).toBe(0);
-			expect(actual.area).toBe(500);
+			expect(actual.area).toBe(200);
 		});
 
 		it('should match data for IPv4 - PL', () => {
@@ -62,7 +62,7 @@ describe('GeoIP2', () => {
 			expect(actual.region).toBe('IVA');
 			expect(actual.eu).toBe('0');
 			expect(actual.timezone).toBe('Europe/Moscow');
-			expect(actual.city).toBe('Kineshma');
+			expect(actual.city).toBe('Ivanovo');
 			expect(actual.ll).toBeTruthy();
 			expect(actual.metro).toBe(0);
 			expect(actual.area).toBe(200);
@@ -114,7 +114,7 @@ describe('GeoIP2', () => {
 	describe('#testUTF8()', () => {
 		it('should return UTF8 city name', () => {
 			const ip = '2.139.175.1';
-			const expected = 'Madrid';
+			const expected = 'El Alamo';
 			const actual = geoIp2.lookup(ip);
 			expect(actual).toBeTruthy();
 			expect(actual.city).toBe(expected);
