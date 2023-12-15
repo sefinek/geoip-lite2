@@ -67,7 +67,7 @@
   },
   "devDependencies": {
     "jest": "^29.7.0",
-    "terser": "^5.25.0"
+    "terser": "^5.26.0"
   },
   "engines": {
     "node": ">=16.20.2"
