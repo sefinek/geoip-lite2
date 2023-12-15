@@ -42,7 +42,6 @@
     "lib/",
     "test/",
     "utils/",
-    ".gitignore",
     "AUTHORS",
     "index.d.ts",
     "LICENSE"
