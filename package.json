@@ -42,7 +42,6 @@
     "lib/",
     "test/",
     "utils/",
-    "AUTHORS",
     "index.d.ts",
     "LICENSE"
   ],
