@@ -1,5 +1,5 @@
 declare module 'geoip-lite2' {
-    export const cmp: number | any | null;
+    export const cmp: number | null;
 
     interface GeoIp2Location {
         range: [number, number];
