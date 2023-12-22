@@ -26,7 +26,7 @@ Notably, it is now powered by the most up-to-date MaxMind database, offering sig
 
 Now this module operates even faster because its files have been minified!
 
-Furthermore, the testing process has been improved by adopting the testing library Mocha.
+Furthermore, the testing process has been improved by adopting the testing library [jest](https://www.npmjs.com/package/jest).
 This change enhances testing and contributes to the overall reliability of the module.
 
 > I am not the creator of this npm module! All copyright rights belong to its original [Creators](AUTHORS).
