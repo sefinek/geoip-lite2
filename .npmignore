@@ -1,4 +1,5 @@
 .idea
+.github
 _Minify
 lib-unminified
 test-unminified
