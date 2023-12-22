@@ -15,7 +15,7 @@ const readline = require('readline');
 fs.existsSync = fs.existsSync || path.existsSync;
 
 const async = require('async');
-const chalk = require('chalk');
+const kleur = require('kleur');
 const iconv = require('iconv-lite');
 const rimraf = require('rimraf').sync;
 const AdmZip = require('adm-zip');
@@ -39,7 +39,7 @@ let dataPath = path.resolve(__dirname, '..', 'data');
 if (typeof geoDataDir !== 'undefined') {
 	dataPath = path.resolve(process.cwd(), geoDataDir.split('=')[1]);
 	if (!fs.existsSync(dataPath)) {
-		console.log(chalk.red('ERROR') + ': Directory doesn\'t exist: ' + dataPath);
+		console.log(kleur.red('ERROR') + ': Directory doesn\'t exist: ' + dataPath);
 		process.exit(1);
 	}
 }
@@ -164,8 +164,8 @@ function check(database, cb) {
 		function onResponse(response) {
 			const status = response.statusCode;
 			if (status !== 200) {
-				console.error(chalk.red('ERROR') + response.data);
-				console.error(chalk.red('ERROR') + ': HTTP Request Failed [%d %s]', status, http.STATUS_CODES[status]);
+				console.error(kleur.red('ERROR') + response.data);
+				console.error(kleur.red('ERROR') + ': HTTP Request Failed [%d %s]', status, http.STATUS_CODES[status]);
 				client.end();
 				process.exit(1);
 			}
@@ -178,15 +178,15 @@ function check(database, cb) {
 			response.on('end', () => {
 				if (str && str.length) {
 					if (str === database.checkValue) {
-						console.log(chalk.green('Database "' + database.type + '" is up to date'));
+						console.log(kleur.green('Database "' + database.type + '" is up to date'));
 						database.skip = true;
 					} else {
-						console.log(chalk.green('Database ' + database.type + ' has new data'));
+						console.log(kleur.green('Database ' + database.type + ' has new data'));
 						database.checkValue = str;
 					}
 				}
 				else {
-					console.error(chalk.red('ERROR') + ': Could not retrieve checksum for', database.type, chalk.red('Aborting'));
+					console.error(kleur.red('ERROR') + ': Could not retrieve checksum for', database.type, kleur.red('Aborting'));
 					console.error('Run with "force" to update without checksum');
 					client.end();
 					process.exit(1);
@@ -216,7 +216,7 @@ function fetch(database, cb) {
 		const status = response.statusCode;
 
 		if (status !== 200) {
-			console.error(chalk.red('ERROR') + ': HTTP Request Failed [%d %s]', status, http.STATUS_CODES[status]);
+			console.error(kleur.red('ERROR') + ': HTTP Request Failed [%d %s]', status, http.STATUS_CODES[status]);
 			client.end();
 			process.exit(1);
 		}
@@ -231,7 +231,7 @@ function fetch(database, cb) {
 		}
 
 		tmpFilePipe.on('close', () => {
-			console.log(chalk.green(' DONE'));
+			console.log(kleur.green(' DONE'));
 			cb(null, tmpFile, fileName, database);
 		});
 	}
@@ -263,7 +263,7 @@ function extract(tmpFile, tmpFileName, database, cb) {
 			fs.writeFileSync(destinationPath, entry.getData());
 		});
 
-		console.log(chalk.green(' DONE'));
+		console.log(kleur.green(' DONE'));
 		cb(null, database);
 	}
 }
@@ -290,7 +290,7 @@ function processLookupCountry(src, cb) {
 	});
 
 	rl.on('close', () => {
-		console.log(chalk.green(' DONE'));
+		console.log(kleur.green(' DONE'));
 		cb();
 	});
 }
@@ -374,7 +374,7 @@ async function processCountryData(src, dest) {
 		await processLine(line);
 	}
 	datFile.close();
-	console.log(chalk.green(' DONE'));
+	console.log(kleur.green(' DONE'));
 }
 
 async function processCityData(src, dest) {
@@ -569,7 +569,7 @@ function processData(database, cb) {
 				console.log('\nCity data processed');
 				return processCityData(src[2], dest[2]);
 			}).then(() => {
-				console.log(chalk.green(' DONE'));
+				console.log(kleur.green(' DONE'));
 				cb(null, database);
 			});
 		});
@@ -580,13 +580,13 @@ function updateChecksum(database, cb) {
 	if (database.skip || !database.checkValue) return cb(); // Don't need to update checksums because it was not fetched or did not change
 
 	fs.writeFile(path.join(dataPath, database.type + '.checksum'), database.checkValue, 'utf8', err => {
-		if (err) console.log(chalk.red('Failed to Update checksums!'), 'Database:', database.type);
+		if (err) console.log(kleur.red('Failed to Update checksums!'), 'Database:', database.type);
 		cb();
 	});
 }
 
 if (!license_key) {
-	console.error(chalk.red('ERROR:'), 'Missing license_key');
+	console.error(kleur.red('ERROR:'), 'Missing license_key');
 	process.exit(1);
 }
 
@@ -597,12 +597,12 @@ async.eachSeries(databases, (database, nextDatabase) => {
 	async.seq(check, fetch, extract, processData, updateChecksum)(database, nextDatabase);
 }, err => {
 	if (err) {
-		console.error(chalk.red('Failed to update databases from MaxMind'), err);
+		console.error(kleur.red('Failed to update databases from MaxMind'), err);
 		process.exit(1);
 	} else {
-		console.log(chalk.green('Successfully updated databases from MaxMind'));
+		console.log(kleur.green('Successfully updated databases from MaxMind'));
 		if (args.indexOf('debug') !== -1) {
-			console.debug(chalk.blue.bold('Notice: temporary files are not deleted for debug purposes'));
+			console.debug(kleur.blue.bold('Notice: temporary files are not deleted for debug purposes'));
 		} else {
 			rimraf(tmpPath);
 		}

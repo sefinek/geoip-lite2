@@ -49,7 +49,7 @@
     "minify-linux": "echo \"Please wait...\n\" && bash _Minify/linux.bash",
     "minify-win": "powershell.exe -ExecutionPolicy Bypass .\\_Minify\\windows.ps1",
     "test": "jest test-unminified",
-    "up": "ncu -u -x chalk && npm install && npm update && npm audit fix",
+    "up": "ncu -u && npm install && npm update && npm audit fix",
     "updatedb": "node utils/updatedb.js",
     "updatedb-debug": "node utils/updatedb.js debug",
     "updatedb-force": "node utils/updatedb.js force",
@@ -58,9 +58,9 @@
   "dependencies": {
     "adm-zip": "^0.5.10",
     "async": "^3.2.5",
-    "chalk": "4.1.2",
     "iconv-lite": "0.6.3",
     "ip-address": "^9.0.5",
+    "kleur": "^4.1.5",
     "rimraf": "^5.0.5"
   },
   "devDependencies": {
