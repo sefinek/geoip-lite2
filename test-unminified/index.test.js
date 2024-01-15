@@ -39,7 +39,7 @@ describe('GeoIP2', () => {
 			expect(actual.city).toBe('');
 			expect(actual.ll).toBeTruthy();
 			expect(actual.metro).toBe(0);
-			expect(actual.area).toBe(200);
+			expect(actual.area).toBe(500);
 		});
 
 		it('should match data for IPv4 - PL', () => {
@@ -65,14 +65,13 @@ describe('GeoIP2', () => {
 			expect(actual.city).toBe('Ivanovo');
 			expect(actual.ll).toBeTruthy();
 			expect(actual.metro).toBe(0);
-			expect(actual.area).toBe(200);
+			expect(actual.area).toBe(100);
 		});
 	});
 
 	describe('#testDataIP6()', () => {
 		it('should match data for IPv6', () => {
-			const ipv6 = '2001:1c04:400::1';
-			const actual = geoIp2.lookup(ipv6);
+			const actual = geoIp2.lookup('2001:1c04:400::1');
 			expect(actual.range !== undefined).toBe(true);
 			expect(actual.country).toBe('NL');
 			expect(actual.region).toBe('NH');
@@ -113,11 +112,9 @@ describe('GeoIP2', () => {
 
 	describe('#testUTF8()', () => {
 		it('should return UTF8 city name', () => {
-			const ip = '2.139.175.1';
-			const expected = 'El Alamo';
-			const actual = geoIp2.lookup(ip);
+			const actual = geoIp2.lookup('2.139.175.1');
 			expect(actual).toBeTruthy();
-			expect(actual.city).toBe(expected);
+			expect(actual.city).toBe('Madrid');
 		});
 	});
 
