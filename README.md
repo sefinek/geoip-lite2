@@ -29,7 +29,7 @@ Now this module operates even faster because its files have been minified!
 Furthermore, the testing process has been improved by adopting the testing library [jest](https://www.npmjs.com/package/jest).
 This change enhances testing and contributes to the overall reliability of the module.
 
-> I am not the creator of this npm module! All copyright rights belong to its original [Creators](AUTHORS).
+> I am not the main creator of this module! All copyright rights belong to its original [Creators](AUTHORS).
 
 
 🌠 Version without a local database
