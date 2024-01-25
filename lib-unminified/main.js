@@ -54,6 +54,16 @@ let cache6 = JSON.parse(JSON.stringify(conf6));
 const RECORD_SIZE = 10;
 const RECORD_SIZE6 = 34;
 
+const geoData = {
+	range: '',
+	country: '',
+	region: '',
+	eu:'',
+	timezone:'',
+	city: '',
+	ll: [0, 0],
+};
+
 const lookup4 = ip => {
 	let fline = 0;
 	let floor = cache4.lastIP;
@@ -69,16 +79,6 @@ const lookup4 = ip => {
 	const locRecordSize = cache4.locationRecordSize;
 
 	let i;
-
-	const geoData = {
-		range: '',
-		country: '',
-		region: '',
-		eu:'',
-		timezone:'',
-		city: '',
-		ll: [0, 0],
-	};
 
 	// Outside IPv4 range
 	if (ip > cache4.lastIP || ip < cache4.firstIP) return null;
@@ -138,13 +138,6 @@ const lookup6 = ip => {
 	const locBuffer = cache4.locationBuffer;
 	const locRecordSize = cache4.locationRecordSize;
 
-	const geoData = {
-		range: '',
-		country: '',
-		region: '',
-		city: '',
-		ll: [0, 0],
-	};
 	const readIp = (line, offset) => {
 		let ii;
 		const ipArray = [];
@@ -210,9 +203,9 @@ const lookup6 = ip => {
 	} while (1);
 };
 
+const v6prefixes = ['0:0:0:0:0:FFFF:', '::FFFF:'];
 const get4mapped = ip => {
 	const ipv6 = ip.toUpperCase();
-	const v6prefixes = ['0:0:0:0:0:FFFF:', '::FFFF:'];
 	for (let i = 0; i < v6prefixes.length; i++) {
 		const v6prefix = v6prefixes[i];
 		if (ipv6.indexOf(v6prefix) === 0) return ipv6.substring(v6prefix.length);

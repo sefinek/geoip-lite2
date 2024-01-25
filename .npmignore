@@ -3,5 +3,6 @@
 _Minify
 lib-unminified
 test-unminified
+utils-unminified
 .eslintrc.js
 command.txt
