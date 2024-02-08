@@ -17,8 +17,7 @@
 </div>
 
 
-🚀 Improved GeoIP Module by [Sefinek](https://sefinek.net)
-------------------------------------------
+# 🚀 Improved GeoIP Module by [Sefinek](https://sefinek.net)
 This module is an improved and updated edition of [geoip-lite](https://github.com/geoip-lite/node-geoip), thoughtfully designed to meet the latest programming standards.
 
 All components have undergone meticulous updates to ensure peak performance and functionality.
@@ -32,21 +31,18 @@ This change enhances testing and contributes to the overall reliability of the m
 > I am not the main creator of this module! All copyright rights belong to its original [Creators](AUTHORS).
 
 
-🌠 Version without a local database
------------------------------------
+## 🌠 Version without a local database
 This module requires a significant amount of RAM because geolocation data is stored in memory. Nevertheless, you can always use the official and alternative [geoip2-api](https://www.npmjs.com/package/geoip2-api) module, which sends a request to the API server and retrieves information about a specific IP address from there.
 
 
-✨ Demonstration
-----------------
+### ✨ Demonstration
 You can see this module in action using my [official API](https://sefinek.net). Generally speaking, the API interface is public, and you can safely use it in your projects. Happy coding!
 
 > Docs: https://api.sefinek.net/docs/v2  
 > Example: https://api.sefinek.net/api/v2/geoip/109.207.159.255?validation=false
 
 
-📑 Introduction
----------------
+## 📑 Introduction
 MaxMind provides a set of data files for IP to Geo mapping along with opensource libraries to parse and lookup these data files.
 One would typically write a wrapper around their C API to get access to this data in other languages (like JavaScript).
 
@@ -61,21 +57,18 @@ information, city, region and postal code lookups are only supported for IPv4.
 > **You SHOULD update the data files after installation.** The MaxMind license does not allow us to distribute the latest version of the data files with this package. Follow the instructions under update the datafiles for details.
 
 
-📚 Philosophy
--------------
+## 📚 Philosophy
 I was really aiming for a fast JavaScript native implementation for geomapping of IPs.
 My prime motivator was the fact that it was really hard to get libgeoip built for Mac OSX without using the library from MacPorts.
 
 
-🕵️‍♂️ Why GeoIP-Lite?
-------------------
+## 🕵️‍♂️ Why GeoIP-Lite?
 GeoIP-Lite is a fully JavaScript implementation of the MaxMind GeoIP API. It is not as fully featured as bindings that use `libgeoip`.
 By reducing scope, this package is about 40% faster at doing lookups. On average, an IP to Location lookup should take 20 microseconds on
 a Macbook Pro. IPv4 addresses take about 6 microseconds, while IPv6 addresses take about 30 microseconds.
 
 
-📝 Synopsis
-------------
+## 📝 Synopsis
 ### Script
 ```javascript
 const geoIp2 = require('geoip-lite2');
@@ -102,8 +95,7 @@ console.log(geo);
 ```
 
 
-🛠️ Installation
-----------------
+## 🛠️ Installation
 
 ### 1. Get the library
 ```cmd
@@ -121,8 +113,7 @@ You can create maxmind account [here](https://www.maxmind.com/en/geolite2/signup
 > If you need an external API that provides GeoIP, you can use [this](#-demonstration).
 
 
-🧩 API
--------
+## 🧩 API
 GeoIP-Lite2 is completely synchronous. There are no callbacks involved.
 All blocking file IO is done at startup time, so all runtime calls are executed in-memory and are fast.
 Startup may take up to 200ms while it reads into memory and indexes data files.
@@ -172,8 +163,7 @@ This method returns a string if the input was in a format that `geoip-lite2` can
 input itself.
 
 
-🔄 Built-in Updater
---------------------
+## 🔄 Built-in Updater
 This package contains an update script that can pull the files from MaxMind and handle the conversion from CSV.
 A npm script alias has been setup to make this process easy. Please keep in mind this requires internet and MaxMind
 rate limits that amount of downloads on their servers.
@@ -233,8 +223,7 @@ GEODATADIR=/some/path
 ```
 
 
-⚠️ Caveats
------------
+## ⚠️ Caveats
 This package includes the GeoLite database from MaxMind. This database is not the most accurate database available,
 however it is the best available for free. You can use the commercial GeoIP database from MaxMind with better
 accuracy by buying a license from MaxMind, and then using the conversion utility to convert it to a format that
@@ -264,24 +253,20 @@ console.log(process.memoryUsage());
 ```
 
 
-🔀 Alternatives
----------------
+## 🔀 Alternatives
 If your use-case requires doing less than 100 queries through the lifetime of your application or if you need really fast latency on start-up, you might want to look into [fast-geoip](https://github.com/onramper/fast-geoip) a package with a compatible API that is optimized for serverless environments and provides faster boot times and lower memory consumption at the expense of longer lookup times.
 
 
-🔖 References
--------------
+## 🔖 References
 - [Documentation from MaxMind](https://www.maxmind.com/app/iso3166)
 - [ISO 3166 (1 & 2) codes](https://en.wikipedia.org/wiki/ISO_3166)
 - [FIPS region codes](https://en.wikipedia.org/wiki/List_of_FIPS_region_codes)
 
 
-👥 Copyright
-------------
+## 👥 Copyright
 `GeoIP-Lite` is Copyright 2011-2018 **Philip Tellis** <philip@bluesmoon.info>  
 `GeoIP-Lite2` is Copyright 2023 **Sefinek** <contact@sefinek.net> (https://sefinek.net)
 
 
-🔐 License
-----------
+## 🔐 License
 There are two licenses for the code and data. See the [LICENSE](LICENSE) file for details.
