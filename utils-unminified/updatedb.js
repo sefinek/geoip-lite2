@@ -163,7 +163,9 @@ function check(database, cb) {
 
 		function onResponse(response) {
 			const status = response.statusCode;
-			if (status !== 200) {
+			if ([301, 302, 303, 307, 308].includes(status)) {
+				return https.get(getHTTPOptions(response.headers.location), onResponse);
+			} else if (status !== 200) {
 				console.error(kleur.red('ERROR') + response.data);
 				console.error(kleur.red('ERROR') + ': HTTP Request Failed [%d %s]', status, http.STATUS_CODES[status]);
 				client.end();
@@ -214,8 +216,9 @@ function fetch(database, cb) {
 
 	function onResponse(response) {
 		const status = response.statusCode;
-
-		if (status !== 200) {
+		if ([301, 302, 303, 307, 308].includes(status)) {
+			return https.get(getHTTPOptions(response.headers.location), onResponse);
+		} else if (status !== 200) {
 			console.error(kleur.red('ERROR') + ': HTTP Request Failed [%d %s]', status, http.STATUS_CODES[status]);
 			client.end();
 			process.exit(1);
