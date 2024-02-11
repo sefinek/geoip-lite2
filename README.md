@@ -265,7 +265,7 @@ If your use-case requires doing less than 100 queries through the lifetime of yo
 
 ## 👥 Copyright
 `GeoIP-Lite` is Copyright 2011-2018 **Philip Tellis** <philip@bluesmoon.info>  
-`GeoIP-Lite2` is Copyright 2023 **Sefinek** <contact@sefinek.net> (https://sefinek.net)
+`GeoIP-Lite2` is Copyright 2023-2024 **Sefinek** <contact@sefinek.net> (https://sefinek.net)
 
 
 ## 🔐 License
