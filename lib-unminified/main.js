@@ -289,9 +289,7 @@ function preload(callback) {
 						fs.close(datFile, cb2);
 					},
 				], err => {
-					if (err) {
-						// Keep old cache
-					} else {
+					if (!err) {
 						asyncCache.lastLine = (datSize / asyncCache.recordSize) - 1;
 						asyncCache.lastIP = asyncCache.mainBuffer.readUInt32BE((asyncCache.lastLine * asyncCache.recordSize) + 4);
 						asyncCache.firstIP = asyncCache.mainBuffer.readUInt32BE(0);
@@ -392,9 +390,7 @@ function preload6(callback) {
 						fs.close(datFile, cb2);
 					},
 				], err => {
-					if (err) {
-						// Keep old cache
-					} else {
+					if (!err) {
 						asyncCache6.lastLine = (datSize / asyncCache6.recordSize) - 1;
 						cache6 = asyncCache6;
 					}
@@ -408,9 +404,7 @@ function preload6(callback) {
 			datSize = fs.fstatSync(datFile).size;
 
 			if (datSize === 0) {
-				throw {
-					code: 'EMPTY_FILE',
-				};
+				throw { code: 'EMPTY_FILE' };
 			}
 		} catch (err) {
 			if (err.code !== 'ENOENT' && err.code !== 'EBADF' && err.code !== 'EMPTY_FILE') {
@@ -467,9 +461,9 @@ module.exports = {
 	// Start watching for data updates. The watcher waits one minute for file transfer to
 	// complete before triggering the callback.
 	startWatchingDataUpdate: callback => {
-		fsWatcher.makeFsWatchFilter(watcherName, geoDataDir, 60 * 1000, () => {
+		fsWatcher.makeFsWatchFilter(watcherName, geoDataDir, 60 * 1000, async () => {
 			// Reload data
-			async.series([
+			await async.series([
 				cb => {
 					preload(cb);
 				}, cb => {
@@ -497,9 +491,9 @@ module.exports = {
 	},
 
 	// Reload data asynchronously
-	reloadData: callback => {
+	reloadData: async callback => {
 		// Reload data
-		async.series([
+		await async.series([
 			cb => {
 				preload(cb);
 			},
