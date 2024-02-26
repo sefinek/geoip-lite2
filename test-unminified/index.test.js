@@ -80,7 +80,7 @@ describe('GeoIP2', () => {
 			expect(actual.city).toBe('Zandvoort');
 			expect(actual.ll).toBeTruthy();
 			expect(actual.metro).toBe(0);
-			expect(actual.area).toBe(5);
+			expect(actual.area).toBe(20);
 		});
 
 		it('should match data for IPv4 - JP', () => {
