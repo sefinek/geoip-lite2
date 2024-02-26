@@ -1,6 +1,6 @@
 {
   "name": "geoip-lite2",
-  "version": "2.1.29",
+  "version": "2.1.30",
   "description": "A light weight native JavaScript implementation of GeoIP API from MaxMind. Improved and faster version by Sefinek.",
   "keywords": [
     "city",
@@ -56,7 +56,7 @@
   },
   "devDependencies": {
     "jest": "^29.7.0",
-    "terser": "^5.27.0"
+    "terser": "^5.28.1"
   },
   "engines": {
     "node": ">=10.3.0"
