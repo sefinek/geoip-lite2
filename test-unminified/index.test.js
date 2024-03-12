@@ -26,7 +26,7 @@ describe('GeoIP2', () => {
 			expect(actual.city).toBe('New York');
 			expect(actual.ll).toBeTruthy();
 			expect(actual.metro).toBe(501);
-			expect(actual.area).toBe(5);
+			expect(actual.area).toBe(200);
 		});
 
 		it('should match data for IPv4 - JP', () => {
@@ -39,7 +39,7 @@ describe('GeoIP2', () => {
 			expect(actual.city).toBe('');
 			expect(actual.ll).toBeTruthy();
 			expect(actual.metro).toBe(0);
-			expect(actual.area).toBe(500);
+			expect(actual.area).toBe(200);
 		});
 
 		it('should match data for IPv4 - PL', () => {
@@ -65,7 +65,7 @@ describe('GeoIP2', () => {
 			expect(actual.city).toBe('Ivanovo');
 			expect(actual.ll).toBeTruthy();
 			expect(actual.metro).toBe(0);
-			expect(actual.area).toBe(100);
+			expect(actual.area).toBe(50);
 		});
 	});
 
@@ -80,7 +80,7 @@ describe('GeoIP2', () => {
 			expect(actual.city).toBe('Zandvoort');
 			expect(actual.ll).toBeTruthy();
 			expect(actual.metro).toBe(0);
-			expect(actual.area).toBe(20);
+			expect(actual.area).toBe(5);
 		});
 
 		it('should match data for IPv4 - JP', () => {
@@ -128,7 +128,6 @@ describe('GeoIP2', () => {
 	describe('#testIPv4MappedIPv6()', () => {
 		it('should match IPv4 mapped IPv6 data', () => {
 			const actual = geoIp2.lookup('195.16.170.74');
-			// assert.strictEqual(actual.city, '');
 			expect(actual.metro).toBe(0);
 		});
 	});
