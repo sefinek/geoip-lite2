@@ -47,7 +47,7 @@
     "version": "node test/version.js"
   },
   "dependencies": {
-    "adm-zip": "^0.5.10",
+    "adm-zip": "^0.5.12",
     "async": "^3.2.5",
     "iconv-lite": "0.6.3",
     "ip-address": "^9.0.5",
@@ -56,7 +56,7 @@
   },
   "devDependencies": {
     "jest": "^29.7.0",
-    "terser": "^5.29.1"
+    "terser": "^5.30.3"
   },
   "engines": {
     "node": ">=10.3.0"
