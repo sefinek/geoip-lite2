@@ -1,5 +1,5 @@
-const fs = require('fs');
-const path = require('path');
+const { access, constants, watch } = require('fs');
+const { join } = require('path');
 const FSWatcher = {};
 
 /**
@@ -26,9 +26,9 @@ function makeFsWatchFilter(name, directory, filename, cdDelay, callback) {
 		// Check to make sure changedFile is not null
 		if (!changedFile) return;
 
-		const filePath = path.join(directory, changedFile);
+		const filePath = join(directory, changedFile);
 		if (!filename || filename === changedFile) {
-			fs.access(filePath, fs.constants.F_OK, err => {
+			access(filePath, constants.F_OK, err => {
 				if (err) return console.error(err);
 
 				// At this point, a new file system activity has been detected,
@@ -57,7 +57,7 @@ function makeFsWatchFilter(name, directory, filename, cdDelay, callback) {
 		stopWatching(name);
 	}
 
-	FSWatcher[name] = fs.watch(directory, onWatchEvent);
+	FSWatcher[name] = watch(directory, onWatchEvent);
 }
 
 /**

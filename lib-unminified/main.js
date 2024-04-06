@@ -1,8 +1,8 @@
 const fs = require('fs');
-const net = require('net');
+const { isIP } = require('net');
 const path = require('path');
 const async = require('async');
-const utils = require('./utils.js');
+const { aton4, aton6, cmp6, ntoa4, ntoa6, cmp } = require('./utils.js');
 const fsWatcher = require('./fsWatcher.js');
 const { version } = require('../package.json');
 
@@ -24,9 +24,9 @@ const dataFiles = {
 };
 
 const privateRange4 = [
-	[utils.aton4('10.0.0.0'), utils.aton4('10.255.255.255')],
-	[utils.aton4('172.16.0.0'), utils.aton4('172.31.255.255')],
-	[utils.aton4('192.168.0.0'), utils.aton4('192.168.255.255')],
+	[aton4('10.0.0.0'), aton4('10.255.255.255')],
+	[aton4('172.16.0.0'), aton4('172.31.255.255')],
+	[aton4('192.168.0.0'), aton4('192.168.255.255')],
 ];
 
 const conf4 = {
@@ -159,14 +159,14 @@ const lookup6 = ip => {
 	let line;
 	let locId;
 
-	if (utils.cmp6(ip, cache6.lastIP) > 0 || utils.cmp6(ip, cache6.firstIP) < 0) return null;
+	if (cmp6(ip, cache6.lastIP) > 0 || cmp6(ip, cache6.firstIP) < 0) return null;
 
 	do {
 		line = Math.round((cline - fline) / 2) + fline;
 		floor = readIp(line, 0);
 		ceil = readIp(line, 1);
 
-		if (utils.cmp6(floor, ip) <= 0 && utils.cmp6(ceil, ip) >= 0) {
+		if (cmp6(floor, ip) <= 0 && cmp6(ceil, ip) >= 0) {
 			if (recordSize === RECORD_SIZE6) {
 				geoData.country = buffer.toString('utf8', (line * recordSize) + 32, (line * recordSize) + 34).replace(/\u0000.*/, '');
 			} else {
@@ -195,9 +195,9 @@ const lookup6 = ip => {
 			} else {
 				cline = fline;
 			}
-		} else if (utils.cmp6(floor, ip) > 0) {
+		} else if (cmp6(floor, ip) > 0) {
 			cline = line;
-		} else if (utils.cmp6(ceil, ip) < 0) {
+		} else if (cmp6(ceil, ip) < 0) {
 			fline = line;
 		}
 	} while (1);
@@ -425,21 +425,21 @@ function preload6(callback) {
 }
 
 module.exports = {
-	cmp: utils.cmp,
+	cmp,
 
 	lookup: ip => {
 		if (!ip) {
 			return null;
 		} else if (typeof ip === 'number') {
 			return lookup4(ip);
-		} else if (net.isIP(ip) === 4) {
-			return lookup4(utils.aton4(ip));
-		} else if (net.isIP(ip) === 6) {
+		} else if (isIP(ip) === 4) {
+			return lookup4(aton4(ip));
+		} else if (isIP(ip) === 6) {
 			const ipv4 = get4mapped(ip);
 			if (ipv4) {
-				return lookup4(utils.aton4(ipv4));
+				return lookup4(aton4(ipv4));
 			} else {
-				return lookup6(utils.aton6(ip));
+				return lookup6(aton6(ip));
 			}
 		}
 
@@ -450,9 +450,9 @@ module.exports = {
 		if (typeof n === 'string') {
 			return n;
 		} else if (typeof n === 'number') {
-			return utils.ntoa4(n);
+			return ntoa4(n);
 		} else if (Array.isArray(n)) {
-			return utils.ntoa6(n);
+			return ntoa6(n);
 		}
 
 		return n;
