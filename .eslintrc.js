@@ -4,7 +4,7 @@ module.exports = {
 	],
 	'env': {
 		'node': true,
-		'es2023': true,
+		'es2024': true,
 	},
 	'parserOptions': {
 		'ecmaVersion': 2024,
