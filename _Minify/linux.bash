@@ -29,7 +29,7 @@ function MinifyJSFiles {
             FileName=$(basename "$file")
             OutputFileName="$OutputDirectory/$FileName"
             echo "Minimizing $file and saving to $OutputFileName"
-            npx terser "$file" -o "$OutputFileName" --mangle --ecma 2023 --compress --format quote_style=1 --toplevel --timings --passes=2
+            npx terser "$file" -o "$OutputFileName" --mangle --ecma 2024 --compress --format quote_style=1 --toplevel --timings --passes=2
         fi
     done
     echo "Minimization of JavaScript files in $SourceDirectory completed"

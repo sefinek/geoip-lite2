@@ -46,7 +46,7 @@ function MinifyJSFiles {
             $FileName = $_.Name
             $OutputFileName = Join-Path $OutputDirectory $FileName
             Write-Host "Minimizing $($_.FullName) and saving to $OutputFileName"
-            npx terser $_.FullName -o $OutputFileName --mangle --ecma 2023 --compress --format quote_style=1 --toplevel --timings --passes=2
+            npx terser $_.FullName -o $OutputFileName --mangle --ecma 2024 --compress --format quote_style=1 --toplevel --timings --passes=2
         }
         Write-Host "Minimization of JavaScript files in $SourceDirectory completed"
     }

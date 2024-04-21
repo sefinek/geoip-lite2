@@ -7,7 +7,7 @@ module.exports = {
 		'es2023': true,
 	},
 	'parserOptions': {
-		'ecmaVersion': 2023,
+		'ecmaVersion': 2024,
 	},
 	'ignorePatterns': ['lib', 'test', 'utils'],
 	'rules': {
