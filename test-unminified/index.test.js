@@ -33,10 +33,10 @@ describe('GeoIP2', () => {
 			const actual = geoIp2.lookup('210.138.184.59');
 			expect(actual.range !== undefined).toBe(true);
 			expect(actual.country).toBe('JP');
-			expect(actual.region).toBe('');
+			expect(actual.region).toBe('25');
 			expect(actual.eu).toBe('0');
 			expect(actual.timezone).toBe('Asia/Tokyo');
-			expect(actual.city).toBe('');
+			expect(actual.city).toBe('Ōtsu');
 			expect(actual.ll).toBeTruthy();
 			expect(actual.metro).toBe(0);
 			expect(actual.area).toBe(200);
@@ -114,7 +114,7 @@ describe('GeoIP2', () => {
 		it('should return UTF8 city name', () => {
 			const actual = geoIp2.lookup('2.139.175.1');
 			expect(actual).toBeTruthy();
-			expect(actual.city).toBe('Madrid');
+			expect(actual.city).toBe('Barcelona');
 		});
 	});
 
