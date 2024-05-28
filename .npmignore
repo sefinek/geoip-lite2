@@ -4,5 +4,5 @@ _Minify
 lib-unminified
 test-unminified
 utils-unminified
-.eslintrc.js
+eslint.config.mjs
 command.txt
