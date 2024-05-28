@@ -68,5 +68,5 @@ function stopWatching(name) {
 	FSWatcher[name].close();
 }
 
-module.exports.makeFsWatchFilter = makeFsWatchFilter;
-module.exports.stopWatching = stopWatching;
+exports.makeFsWatchFilter = makeFsWatchFilter;
+exports.stopWatching = stopWatching;

@@ -12,7 +12,7 @@ const watcherName = 'dataWatcher';
 
 const geoDataDir = path.resolve(
 	__dirname,
-	global.geoDataDir || process.env.geoDataDIR || '../data/',
+	global.geoDataDir || process.env.geoDataDIR || '../data/'
 );
 
 const dataFiles = {
@@ -20,13 +20,13 @@ const dataFiles = {
 	city6: path.join(geoDataDir, 'geoip-city6.dat'),
 	cityNames: path.join(geoDataDir, 'geoip-city-names.dat'),
 	country: path.join(geoDataDir, 'geoip-country.dat'),
-	country6: path.join(geoDataDir, 'geoip-country6.dat'),
+	country6: path.join(geoDataDir, 'geoip-country6.dat')
 };
 
 const privateRange4 = [
 	[aton4('10.0.0.0'), aton4('10.255.255.255')],
 	[aton4('172.16.0.0'), aton4('172.31.255.255')],
-	[aton4('192.168.0.0'), aton4('192.168.255.255')],
+	[aton4('192.168.0.0'), aton4('192.168.255.255')]
 ];
 
 const conf4 = {
@@ -36,7 +36,7 @@ const conf4 = {
 	locationBuffer: null,
 	locationRecordSize: 88,
 	mainBuffer: null,
-	recordSize: 24,
+	recordSize: 24
 };
 
 const conf6 = {
@@ -44,7 +44,7 @@ const conf6 = {
 	lastIP: null,
 	lastLine: 0,
 	mainBuffer: null,
-	recordSize: 48,
+	recordSize: 48
 };
 
 // Copy original configs
@@ -61,7 +61,7 @@ const geoData = {
 	eu:'',
 	timezone:'',
 	city: '',
-	ll: [0, 0],
+	ll: [0, 0]
 };
 
 const lookup4 = ip => {
@@ -253,7 +253,7 @@ function preload(callback) {
 							datSize = stats.size;
 							cb2(err);
 						});
-					},
+					}
 				], err => {
 					if (err) {
 						if (err.code !== 'ENOENT' && err.code !== 'EBADF') {
@@ -287,7 +287,7 @@ function preload(callback) {
 					},
 					cb2 => {
 						fs.close(datFile, cb2);
-					},
+					}
 				], err => {
 					if (!err) {
 						asyncCache.lastLine = (datSize / asyncCache.recordSize) - 1;
@@ -297,7 +297,7 @@ function preload(callback) {
 					}
 					callback(err);
 				});
-			},
+			}
 		]);
 	} else {
 		try {
@@ -355,7 +355,7 @@ function preload6(callback) {
 							datSize = stats.size;
 							cb2(err);
 						});
-					},
+					}
 				], err => {
 					if (err) {
 						if (err.code !== 'ENOENT' && err.code !== 'EBADF') {
@@ -388,7 +388,7 @@ function preload6(callback) {
 					},
 					cb2 => {
 						fs.close(datFile, cb2);
-					},
+					}
 				], err => {
 					if (!err) {
 						asyncCache6.lastLine = (datSize / asyncCache6.recordSize) - 1;
@@ -396,7 +396,7 @@ function preload6(callback) {
 					}
 					callback(err);
 				});
-			},
+			}
 		]);
 	} else {
 		try {
@@ -468,7 +468,7 @@ module.exports = {
 					preload(cb);
 				}, cb => {
 					preload6(cb);
-				},
+				}
 			], callback);
 		});
 	},
@@ -499,11 +499,11 @@ module.exports = {
 			},
 			cb => {
 				preload6(cb);
-			},
+			}
 		], callback);
 	},
 
-	version,
+	version
 };
 
 preload();
