@@ -47,7 +47,7 @@
     "version": "node test/version.js"
   },
   "dependencies": {
-    "adm-zip": "^0.5.12",
+    "adm-zip": "^0.5.14",
     "async": "^3.2.5",
     "iconv-lite": "0.6.3",
     "ip-address": "^9.0.5",
@@ -55,11 +55,10 @@
     "rimraf": "^5.0.7"
   },
   "devDependencies": {
-    "@eslint/js": "^9.3.0",
-    "eslint": "^9.3.0",
-    "globals": "^15.3.0",
+    "@eslint/js": "^9.5.0",
+    "globals": "^15.6.0",
     "jest": "^29.7.0",
-    "terser": "^5.31.0"
+    "terser": "^5.31.1"
   },
   "engines": {
     "node": ">=10.3.0"
