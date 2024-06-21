@@ -67,7 +67,7 @@ a Macbook Pro. IPv4 addresses take about 6 microseconds, while IPv6 addresses ta
 
 ## 📝 Synopsis
 ### Script
-```javascript
+```js
 const geoIp2 = require('geoip-lite2');
 
 const ip = '146.19.109.255';
@@ -120,13 +120,13 @@ If you have an IP address in dotted quad notation, IPv6 colon notation, or a 32-
 as an IPv4 address), pass it to the `lookup` method. Note that you should remove any `[` and `]` around an
 IPv6 address before passing it to this method.
 
-```javascript
+```js
 const geo = geoIp2.lookup(ip);
 ```
 
 If the IP address was found, the `lookup` method returns an object with the following structure:
 
-```javascript
+```js
 {
    range: [ <low bound of IP block>, <high bound of IP block> ],
    country: 'CC',                 // 2 letter ISO-3166-1 country code
@@ -152,7 +152,7 @@ If the IP address was not found, the `lookup` returns `null`
 If you have a 32-bit unsigned integer, or a number returned as part of the `range` array from the `lookup` method,
 the `pretty` method can be used to turn it into a human-readable string.
 
-```javascript
+```js
 console.log('The IP is %s', geoIp2.pretty(ip));
 ```
 
@@ -189,7 +189,7 @@ If you have a server running `geoip-lite2`, and you want to reload its geo data,
 #### Programmatically
 You can do it programmatically, calling after scheduled data updates
 
-```javascript
+```js
 // Synchronously
 geoIp2.reloadDataSync();
 
@@ -202,7 +202,7 @@ geoIp2.reloadData(() => {
 #### Automatic Start and stop watching for data updates
 You can enable the data watcher to automatically refresh in-memory geo data when a file changes in the data directory.
 
-```javascript
+```js
 geoIp2.startWatchingDataUpdate();
 ```
 
@@ -233,7 +233,7 @@ cost though, and you make it up at run time with very fast lookups.
 ### Memory usage
 Quick test on memory consumption shows that library uses around 100 MB per process.
 
-```javascript
+```js
 const geoIp2 = require('geoip-lite2');
 console.log(process.memoryUsage());
 
