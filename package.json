@@ -51,7 +51,6 @@
     "async": "^3.2.5",
     "iconv-lite": "0.6.3",
     "ip-address": "^9.0.5",
-    "kleur": "^4.1.5",
     "rimraf": "^5.0.7"
   },
   "devDependencies": {

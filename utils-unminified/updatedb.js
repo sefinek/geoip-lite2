@@ -3,7 +3,7 @@
 'use strict';
 
 const { name, version } = require('../package.json');
-const UserAgent = `Mozilla/5.0 (compatible; ${name}/${version}; +https://sefinek.net)`;
+const UserAgent = `Mozilla/5.0 (compatible; ${name}/${version}; +https://github.com/sefinek24/geoip-lite2)`;
 
 const fs = require('fs');
 const http = require('http');
@@ -15,8 +15,7 @@ const readline = require('readline');
 fs.existsSync = fs.existsSync || path.existsSync;
 
 const async = require('async');
-const kleur = require('kleur');
-const iconv = require('iconv-lite');
+const { decodeStream } = require('iconv-lite');
 const rimraf = require('rimraf').sync;
 const AdmZip = require('adm-zip');
 const utils = require('../lib/utils.js');
@@ -39,7 +38,7 @@ let dataPath = path.resolve(__dirname, '..', 'data');
 if (typeof geoDataDir !== 'undefined') {
 	dataPath = path.resolve(process.cwd(), geoDataDir.split('=')[1]);
 	if (!fs.existsSync(dataPath)) {
-		console.log(kleur.red('ERROR') + ': Directory doesn\'t exist: ' + dataPath);
+		console.log('ERROR: Directory doesn\'t exist: ' + dataPath);
 		process.exit(1);
 	}
 }
@@ -135,9 +134,8 @@ function getHTTPOptions(downloadUrl) {
 		try {
 			const HttpsProxyAgent = require('https-proxy-agent');
 			options.agent = new HttpsProxyAgent(process.env.http_proxy || process.env.https_proxy);
-		}
-		catch (e) {
-			console.error('Install https-proxy-agent to use an HTTP/HTTPS proxy');
+		} catch (err) {
+			console.error(`Install https-proxy-agent to use an HTTP/HTTPS proxy. ${err.message}`);
 			process.exit(-1);
 		}
 	}
@@ -166,8 +164,8 @@ function check(database, cb) {
 			if ([301, 302, 303, 307, 308].includes(status)) {
 				return https.get(getHTTPOptions(response.headers.location), onResponse);
 			} else if (status !== 200) {
-				console.error(kleur.red('ERROR') + response.data);
-				console.error(kleur.red('ERROR') + ': HTTP Request Failed [%d %s]', status, http.STATUS_CODES[status]);
+				console.error(response.data);
+				console.error('ERROR: HTTP Request Failed [%d %s]', status, http.STATUS_CODES[status]);
 				client.end();
 				process.exit(1);
 			}
@@ -180,15 +178,15 @@ function check(database, cb) {
 			response.on('end', () => {
 				if (str && str.length) {
 					if (str === database.checkValue) {
-						console.log(kleur.green('Database "' + database.type + '" is up to date'));
+						console.log(`Database "${database.type}" is up to date`);
 						database.skip = true;
 					} else {
-						console.log(kleur.green('Database ' + database.type + ' has new data'));
+						console.log(`Database "${database.type}" has new data`);
 						database.checkValue = str;
 					}
 				}
 				else {
-					console.error(kleur.red('ERROR') + ': Could not retrieve checksum for', database.type, kleur.red('Aborting'));
+					console.error(`ERROR: Could not retrieve checksum for ${database.type}. Aborting.`);
 					console.error('Run with "force" to update without checksum');
 					client.end();
 					process.exit(1);
@@ -219,7 +217,7 @@ function fetch(database, cb) {
 		if ([301, 302, 303, 307, 308].includes(status)) {
 			return https.get(getHTTPOptions(response.headers.location), onResponse);
 		} else if (status !== 200) {
-			console.error(kleur.red('ERROR') + ': HTTP Request Failed [%d %s]', status, http.STATUS_CODES[status]);
+			console.error('ERROR: HTTP Request Failed [%d %s]', status, http.STATUS_CODES[status]);
 			client.end();
 			process.exit(1);
 		}
@@ -234,7 +232,7 @@ function fetch(database, cb) {
 		}
 
 		tmpFilePipe.on('close', () => {
-			console.log(kleur.green(' DONE'));
+			console.log(' DONE');
 			cb(null, tmpFile, fileName, database);
 		});
 	}
@@ -266,7 +264,7 @@ function extract(tmpFile, tmpFileName, database, cb) {
 			fs.writeFileSync(destinationPath, entry.getData());
 		});
 
-		console.log(kleur.green(' DONE'));
+		console.log(' DONE');
 		cb(null, database);
 	}
 }
@@ -284,7 +282,7 @@ function processLookupCountry(src, cb) {
 
 	process.stdout.write('Processing lookup data (may take a moment)...');
 
-	const rl = readline.createInterface({ input: fs.createReadStream(tmpDataFile).pipe(iconv.decodeStream('latin1')), output: process.stdout, terminal: false });
+	const rl = readline.createInterface({ input: fs.createReadStream(tmpDataFile).pipe(decodeStream('latin1')), output: process.stdout, terminal: false });
 
 	let lineCount = 0;
 	rl.on('line', line => {
@@ -293,7 +291,7 @@ function processLookupCountry(src, cb) {
 	});
 
 	rl.on('close', () => {
-		console.log(kleur.green(' DONE'));
+		console.log(' DONE');
 		cb();
 	});
 }
@@ -377,7 +375,7 @@ async function processCountryData(src, dest) {
 		await processLine(line);
 	}
 	datFile.close();
-	console.log(kleur.green(' DONE'));
+	console.log(' DONE');
 }
 
 async function processCityData(src, dest) {
@@ -532,7 +530,7 @@ function processCityDataNames(src, dest, cb) {
 
 	var datFile = fs.openSync(dataFile, 'w');
 
-	const rl = readline.createInterface({ input: fs.createReadStream(tmpDataFile).pipe(iconv.decodeStream('utf-8')), output: process.stdout, terminal: false });
+	const rl = readline.createInterface({ input: fs.createReadStream(tmpDataFile).pipe(decodeStream('utf-8')), output: process.stdout, terminal: false });
 
 	let lineCount = 0;
 	rl.on('line', line => {
@@ -572,7 +570,7 @@ function processData(database, cb) {
 				console.log('\nCity data processed');
 				return processCityData(src[2], dest[2]);
 			}).then(() => {
-				console.log(kleur.green(' DONE'));
+				console.log(' DONE');
 				cb(null, database);
 			});
 		});
@@ -583,13 +581,13 @@ function updateChecksum(database, cb) {
 	if (database.skip || !database.checkValue) return cb(); // Don't need to update checksums because it was not fetched or did not change
 
 	fs.writeFile(path.join(dataPath, database.type + '.checksum'), database.checkValue, 'utf8', err => {
-		if (err) console.log(kleur.red('Failed to Update checksums!'), 'Database:', database.type);
+		if (err) console.log('Failed to Update checksums! Database:', database.type);
 		cb();
 	});
 }
 
 if (!license_key) {
-	console.error(kleur.red('ERROR:'), 'Missing license_key');
+	console.error('ERROR: Missing license_key');
 	process.exit(1);
 }
 
@@ -600,12 +598,12 @@ async.eachSeries(databases, (database, nextDatabase) => {
 	async.seq(check, fetch, extract, processData, updateChecksum)(database, nextDatabase);
 }, err => {
 	if (err) {
-		console.error(kleur.red('Failed to update databases from MaxMind'), err);
+		console.error('Failed to update databases from MaxMind!', err);
 		process.exit(1);
 	} else {
-		console.log(kleur.green('Successfully updated databases from MaxMind'));
+		console.log('Successfully updated databases from MaxMind');
 		if (args.indexOf('debug') !== -1) {
-			console.debug(kleur.blue.bold('Notice: temporary files are not deleted for debug purposes'));
+			console.debug('Notice: temporary files are not deleted for debug purposes');
 		} else {
 			rimraf(tmpPath);
 		}
