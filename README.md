@@ -36,7 +36,7 @@ This module requires a significant amount of RAM because geolocation data is sto
 
 
 ### ✨ Demonstration
-You can see this module in action using my [official API](https://api.sefinek.net). Generally speaking, the API interface is public, and you can safely use it in your projects. Happy coding!
+You can see this module in action using my [official API](https://api.sefinek.net). The API interface is public and can be safely used in your projects without any limits. Happy coding!
 
 > Documentation: https://api.sefinek.net/docs/v2  
 > Example: https://api.sefinek.net/api/v2/geoip/109.207.159.255?validation=false
