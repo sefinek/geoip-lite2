@@ -34,16 +34,37 @@ const { Address6, Address4 } = require('ip-address');
 const numberFormatter = new Intl.NumberFormat('en-US');
 
 const log = {
-        info: (msg, ...logArgs) => console.log('[INFO]', msg, ...logArgs),
-        success: (msg, ...logArgs) => console.log('[SUCCESS]', msg, ...logArgs),
-        warn: (msg, ...logArgs) => console.warn('[WARN]', msg, ...logArgs),
-        error: (msg, ...logArgs) => console.error('[ERROR]', msg, ...logArgs),
-        progress: (msg) => process.stdout.write(`[INFO] ${msg}... `),
-        done: () => console.log('Done'),
-        progressCount: (msg, count, unit = 'entries processed') => {
-                console.log('[INFO]', `${msg} (${numberFormatter.format(count)} ${unit})`);
-        },
+	info: (msg, ...logArgs) => console.log('[INFO]', msg, ...logArgs),
+	success: (msg, ...logArgs) => console.log('[SUCCESS]', msg, ...logArgs),
+	warn: (msg, ...logArgs) => console.warn('[WARN]', msg, ...logArgs),
+	error: (msg, ...logArgs) => console.error('[ERROR]', msg, ...logArgs),
+	progress: (msg) => process.stdout.write(`[INFO] ${msg}... `),
+	done: () => console.log('Done'),
+	progressCount: (msg, count, unit = 'entries processed') => {
+		console.log('[INFO]', `${msg} (${numberFormatter.format(count)} ${unit})`);
+	},
 };
+
+function startProcessingStage(label, unit = 'entries', intervalMs = 5000) {
+	log.info(`Processing ${label} (this may take a moment)...`);
+	let lastLog = Date.now();
+	return {
+		progress(count) {
+			const now = Date.now();
+			if (now - lastLog >= intervalMs) {
+				lastLog = now;
+				log.progressCount(`Processing ${label}`, count, `${unit} processed`);
+			}
+		},
+		complete(total) {
+			if (typeof total === 'number') {
+				log.info(`${label} processed (${numberFormatter.format(total)} ${unit})`);
+			} else {
+				log.info(`${label} processed`);
+			}
+		},
+	};
+}
 
 // ============================================================================
 // Configuration
@@ -345,17 +366,15 @@ async function processCountryData(src, dest, label = 'Country data') {
 
 	rimraf(dataFile);
 	mkdir(dataFile);
-
-	process.stdout.write('\n');
-	log.progress(`Processing ${label} (this may take a moment)`);
-	let tstart = Date.now();
+	const stage = startProcessingStage(label);
 	const datFile = fs.createWriteStream(dataFile);
 
-        function processLine(line) {
-                const fields = CSVtoArray(line);
-                if (!fields || fields.length < 6) return log.warn('Malformed line detected:', line);
+	function processLine(line) {
+		const fields = CSVtoArray(line);
+		if (!fields || fields.length < 6) return log.warn('Malformed line detected:', line);
 
 		lines++;
+		stage.progress(lines);
 
 		let sip;
 		let eip;
@@ -394,12 +413,7 @@ async function processCountryData(src, dest, label = 'Country data') {
 				b.writeUInt32BE(eip, 4);
 			}
 
-                        b.write(cc, bsz - 2);
-                        if (Date.now() - tstart > 5000) {
-                                tstart = Date.now();
-                                process.stdout.write('\n');
-                                log.progressCount(`Processing ${label}`, lines);
-                        }
+			b.write(cc, bsz - 2);
 
 			if (datFile._writableState.needDrain) {
 				return new Promise(resolve => {
@@ -411,54 +425,53 @@ async function processCountryData(src, dest, label = 'Country data') {
 		}
 	}
 
-        await new Promise((resolve, reject) => {
-                const rl = readline.createInterface({ input: fs.createReadStream(tmpDataFile), crlfDelay: Infinity });
-                let settled = false;
-                let i = 0;
+	await new Promise((resolve, reject) => {
+		const rl = readline.createInterface({ input: fs.createReadStream(tmpDataFile), crlfDelay: Infinity });
+		let settled = false;
+		let i = 0;
 
-                function finish(err) {
-                        if (settled) return;
-                        settled = true;
-                        if (!rl.closed) rl.close();
-                        if (err) reject(err);
-                        else resolve();
-                }
+		function finish(err) {
+			if (settled) return;
+			settled = true;
+			if (!rl.closed) rl.close();
+			if (err) reject(err);
+			else resolve();
+		}
 
-                function resume() {
-                        if (!settled && !rl.closed) rl.resume();
-                }
+		function resume() {
+			if (!settled && !rl.closed) rl.resume();
+		}
 
-                rl.on('line', line => {
-                        rl.pause();
-                        i++;
-                        if (i === 1) {
-                                resume();
-                                return;
-                        }
+		rl.on('line', line => {
+			rl.pause();
+			i++;
+			if (i === 1) {
+				resume();
+				return;
+			}
 
-                        let result;
-                        try {
-                                result = processLine(line);
-                        } catch (err) {
-                                finish(err);
-                                return;
-                        }
+			let result;
+			try {
+				result = processLine(line);
+			} catch (err) {
+				finish(err);
+				return;
+			}
 
-                        if (result && typeof result.then === 'function') {
-                                result.then(() => {
-                                        resume();
-                                }).catch(finish);
-                        } else {
-                                resume();
-                        }
-                });
+			if (result && typeof result.then === 'function') {
+				result.then(() => {
+					resume();
+				}).catch(finish);
+			} else {
+				resume();
+			}
+		});
 
-                rl.on('close', () => finish());
-                rl.on('error', finish);
-        });
-        datFile.close();
-        log.done();
-        log.info(`${label} processed`);
+		rl.on('close', () => finish());
+		rl.on('error', finish);
+	});
+	datFile.close();
+	stage.complete(lines);
 }
 
 async function processCityData(src, dest, label = 'City data') {
@@ -467,10 +480,7 @@ async function processCityData(src, dest, label = 'City data') {
 	const tmpDataFile = path.join(tmpPath, src);
 
 	rimraf(dataFile);
-
-	process.stdout.write('\n');
-	log.progress(`Processing ${label} (this may take a moment)`);
-	let tstart = Date.now();
+	const stage = startProcessingStage(label);
 	const datFile = fs.createWriteStream(dataFile);
 
 	async function processLine(line) {
@@ -491,6 +501,7 @@ async function processCityData(src, dest, label = 'City data') {
 		let i;
 
 		lines++;
+		stage.progress(lines);
 
 		if (fields[0].match(/:/)) {
 			// IPv6
@@ -545,12 +556,6 @@ async function processCityData(src, dest, label = 'City data') {
 			b.writeInt32BE(area, 20);
 		}
 
-                if (Date.now() - tstart > 5000) {
-                        tstart = Date.now();
-                        process.stdout.write('\n');
-                        log.progressCount(`Processing ${label}`, lines);
-                }
-
 		if (datFile._writableState.needDrain) {
 			return new Promise((resolve) => {
 				datFile.write(b, resolve);
@@ -560,54 +565,53 @@ async function processCityData(src, dest, label = 'City data') {
 		}
 	}
 
-        await new Promise((resolve, reject) => {
-                const rl = readline.createInterface({ input: fs.createReadStream(tmpDataFile), crlfDelay: Infinity });
-                let settled = false;
-                let i = 0;
+	await new Promise((resolve, reject) => {
+		const rl = readline.createInterface({ input: fs.createReadStream(tmpDataFile), crlfDelay: Infinity });
+		let settled = false;
+		let i = 0;
 
-                function finish(err) {
-                        if (settled) return;
-                        settled = true;
-                        if (!rl.closed) rl.close();
-                        if (err) reject(err);
-                        else resolve();
-                }
+		function finish(err) {
+			if (settled) return;
+			settled = true;
+			if (!rl.closed) rl.close();
+			if (err) reject(err);
+			else resolve();
+		}
 
-                function resume() {
-                        if (!settled && !rl.closed) rl.resume();
-                }
+		function resume() {
+			if (!settled && !rl.closed) rl.resume();
+		}
 
-                rl.on('line', line => {
-                        rl.pause();
-                        i++;
-                        if (i === 1) {
-                                resume();
-                                return;
-                        }
+		rl.on('line', line => {
+			rl.pause();
+			i++;
+			if (i === 1) {
+				resume();
+				return;
+			}
 
-                        let result;
-                        try {
-                                result = processLine(line);
-                        } catch (err) {
-                                finish(err);
-                                return;
-                        }
+			let result;
+			try {
+				result = processLine(line);
+			} catch (err) {
+				finish(err);
+				return;
+			}
 
-                        if (result && typeof result.then === 'function') {
-                                result.then(() => {
-                                        resume();
-                                }).catch(finish);
-                        } else {
-                                resume();
-                        }
-                });
+			if (result && typeof result.then === 'function') {
+				result.then(() => {
+					resume();
+				}).catch(finish);
+			} else {
+				resume();
+			}
+		});
 
-                rl.on('close', () => finish());
-                rl.on('error', finish);
-        });
-        datFile.close();
-        log.done();
-        log.info(`${label} processed`);
+		rl.on('close', () => finish());
+		rl.on('error', finish);
+	});
+	datFile.close();
+	stage.complete(lines);
 }
 
 function processCityDataNames(src, dest, cb) {
@@ -619,9 +623,7 @@ function processCityDataNames(src, dest, cb) {
 	rimraf(dataFile);
 
 	const datFile = fs.openSync(dataFile, 'w');
-
-	process.stdout.write('\n');
-	log.progress('Processing city names (this may take a moment)');
+	const stage = startProcessingStage('City names', 'records');
 
 	function processLine(line) {
 		if (line.match(/^Copyright/) || !line.match(/\d/)) return;
@@ -656,6 +658,7 @@ function processCityDataNames(src, dest, cb) {
 
 		fs.writeSync(datFile, b, 0, b.length, null);
 		linesCount++;
+		stage.progress(linesCount);
 	}
 
 	const rl = readline.createInterface({ input: fs.createReadStream(tmpDataFile).pipe(decodeStream('utf-8')), output: process.stdout, terminal: false });
@@ -668,8 +671,7 @@ function processCityDataNames(src, dest, cb) {
 	});
 
 	rl.on('close', () => {
-		log.done();
-		log.info('City names processed');
+		stage.complete(linesCount);
 		cb();
 	});
 }
