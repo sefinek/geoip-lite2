@@ -31,13 +31,18 @@ const { Address6, Address4 } = require('ip-address');
 // ============================================================================
 
 // Logging utility for consistent and readable output
+const numberFormatter = new Intl.NumberFormat('en-US');
+
 const log = {
-	info: (msg, ...logArgs) => console.log('[INFO]', msg, ...logArgs),
-	success: (msg, ...logArgs) => console.log('[SUCCESS]', msg, ...logArgs),
-	warn: (msg, ...logArgs) => console.warn('[WARN]', msg, ...logArgs),
-	error: (msg, ...logArgs) => console.error('[ERROR]', msg, ...logArgs),
-	progress: (msg) => process.stdout.write(`[INFO] ${msg}... `),
-	done: () => console.log('Done'),
+        info: (msg, ...logArgs) => console.log('[INFO]', msg, ...logArgs),
+        success: (msg, ...logArgs) => console.log('[SUCCESS]', msg, ...logArgs),
+        warn: (msg, ...logArgs) => console.warn('[WARN]', msg, ...logArgs),
+        error: (msg, ...logArgs) => console.error('[ERROR]', msg, ...logArgs),
+        progress: (msg) => process.stdout.write(`[INFO] ${msg}... `),
+        done: () => console.log('Done'),
+        progressCount: (msg, count, unit = 'entries processed') => {
+                console.log('[INFO]', `${msg} (${numberFormatter.format(count)} ${unit})`);
+        },
 };
 
 // ============================================================================
@@ -333,7 +338,7 @@ function processLookupCountry(src, cb) {
 // Data Processing Functions
 // ============================================================================
 
-async function processCountryData(src, dest) {
+async function processCountryData(src, dest, label = 'Country data') {
 	let lines = 0;
 	const dataFile = path.join(dataPath, dest);
 	const tmpDataFile = path.join(tmpPath, src);
@@ -342,13 +347,13 @@ async function processCountryData(src, dest) {
 	mkdir(dataFile);
 
 	process.stdout.write('\n');
-	log.progress('Processing country data (this may take a moment)');
+	log.progress(`Processing ${label} (this may take a moment)`);
 	let tstart = Date.now();
 	const datFile = fs.createWriteStream(dataFile);
 
-	function processLine(line) {
-		const fields = CSVtoArray(line);
-		if (!fields || fields.length < 6) return log.warn('Malformed line detected:', line);
+        function processLine(line) {
+                const fields = CSVtoArray(line);
+                if (!fields || fields.length < 6) return log.warn('Malformed line detected:', line);
 
 		lines++;
 
@@ -389,11 +394,12 @@ async function processCountryData(src, dest) {
 				b.writeUInt32BE(eip, 4);
 			}
 
-			b.write(cc, bsz - 2);
-			if (Date.now() - tstart > 5000) {
-				tstart = Date.now();
-				process.stdout.write(`\nStill working (${lines})...`);
-			}
+                        b.write(cc, bsz - 2);
+                        if (Date.now() - tstart > 5000) {
+                                tstart = Date.now();
+                                process.stdout.write('\n');
+                                log.progressCount(`Processing ${label}`, lines);
+                        }
 
 			if (datFile._writableState.needDrain) {
 				return new Promise(resolve => {
@@ -405,18 +411,57 @@ async function processCountryData(src, dest) {
 		}
 	}
 
-	const rl = readline.createInterface({ input: fs.createReadStream(tmpDataFile), crlfDelay: Infinity });
-	let i = 0;
-	for await (const line of rl) {
-		i++;
-		if (i === 1) continue;
-		await processLine(line);
-	}
-	datFile.close();
-	log.done();
+        await new Promise((resolve, reject) => {
+                const rl = readline.createInterface({ input: fs.createReadStream(tmpDataFile), crlfDelay: Infinity });
+                let settled = false;
+                let i = 0;
+
+                function finish(err) {
+                        if (settled) return;
+                        settled = true;
+                        if (!rl.closed) rl.close();
+                        if (err) reject(err);
+                        else resolve();
+                }
+
+                function resume() {
+                        if (!settled && !rl.closed) rl.resume();
+                }
+
+                rl.on('line', line => {
+                        rl.pause();
+                        i++;
+                        if (i === 1) {
+                                resume();
+                                return;
+                        }
+
+                        let result;
+                        try {
+                                result = processLine(line);
+                        } catch (err) {
+                                finish(err);
+                                return;
+                        }
+
+                        if (result && typeof result.then === 'function') {
+                                result.then(() => {
+                                        resume();
+                                }).catch(finish);
+                        } else {
+                                resume();
+                        }
+                });
+
+                rl.on('close', () => finish());
+                rl.on('error', finish);
+        });
+        datFile.close();
+        log.done();
+        log.info(`${label} processed`);
 }
 
-async function processCityData(src, dest) {
+async function processCityData(src, dest, label = 'City data') {
 	let lines = 0;
 	const dataFile = path.join(dataPath, dest);
 	const tmpDataFile = path.join(tmpPath, src);
@@ -424,7 +469,7 @@ async function processCityData(src, dest) {
 	rimraf(dataFile);
 
 	process.stdout.write('\n');
-	log.progress('Processing city data (this may take a moment)');
+	log.progress(`Processing ${label} (this may take a moment)`);
 	let tstart = Date.now();
 	const datFile = fs.createWriteStream(dataFile);
 
@@ -500,10 +545,11 @@ async function processCityData(src, dest) {
 			b.writeInt32BE(area, 20);
 		}
 
-		if (Date.now() - tstart > 5000) {
-			tstart = Date.now();
-			process.stdout.write('\n[INFO] Processing... (' + lines + ' entries) ');
-		}
+                if (Date.now() - tstart > 5000) {
+                        tstart = Date.now();
+                        process.stdout.write('\n');
+                        log.progressCount(`Processing ${label}`, lines);
+                }
 
 		if (datFile._writableState.needDrain) {
 			return new Promise((resolve) => {
@@ -514,14 +560,54 @@ async function processCityData(src, dest) {
 		}
 	}
 
-	const rl = readline.createInterface({ input: fs.createReadStream(tmpDataFile), crlfDelay: Infinity });
-	let i = 0;
-	for await (const line of rl) {
-		i++;
-		if (i === 1) continue;
-		await processLine(line);
-	}
-	datFile.close();
+        await new Promise((resolve, reject) => {
+                const rl = readline.createInterface({ input: fs.createReadStream(tmpDataFile), crlfDelay: Infinity });
+                let settled = false;
+                let i = 0;
+
+                function finish(err) {
+                        if (settled) return;
+                        settled = true;
+                        if (!rl.closed) rl.close();
+                        if (err) reject(err);
+                        else resolve();
+                }
+
+                function resume() {
+                        if (!settled && !rl.closed) rl.resume();
+                }
+
+                rl.on('line', line => {
+                        rl.pause();
+                        i++;
+                        if (i === 1) {
+                                resume();
+                                return;
+                        }
+
+                        let result;
+                        try {
+                                result = processLine(line);
+                        } catch (err) {
+                                finish(err);
+                                return;
+                        }
+
+                        if (result && typeof result.then === 'function') {
+                                result.then(() => {
+                                        resume();
+                                }).catch(finish);
+                        } else {
+                                resume();
+                        }
+                });
+
+                rl.on('close', () => finish());
+                rl.on('error', finish);
+        });
+        datFile.close();
+        log.done();
+        log.info(`${label} processed`);
 }
 
 function processCityDataNames(src, dest, cb) {
@@ -533,6 +619,9 @@ function processCityDataNames(src, dest, cb) {
 	rimraf(dataFile);
 
 	const datFile = fs.openSync(dataFile, 'w');
+
+	process.stdout.write('\n');
+	log.progress('Processing city names (this may take a moment)');
 
 	function processLine(line) {
 		if (line.match(/^Copyright/) || !line.match(/\d/)) return;
@@ -578,7 +667,11 @@ function processCityDataNames(src, dest, cb) {
 		lineCount++;
 	});
 
-	rl.on('close', cb);
+	rl.on('close', () => {
+		log.done();
+		log.info('City names processed');
+		cb();
+	});
 }
 
 // ============================================================================
@@ -595,26 +688,22 @@ function processData(database, cb) {
 	if (type === 'country') {
 		if (Array.isArray(src)) {
 			processLookupCountry(src[0], () => {
-				processCountryData(src[1], dest[1]).then(() => {
-					return processCountryData(src[2], dest[2]);
+				processCountryData(src[1], dest[1], 'Country IPv4 data').then(() => {
+					return processCountryData(src[2], dest[2], 'Country IPv6 data');
 				}).then(() => {
 					cb(null, database);
 				});
 			});
-		}
-		else {
-			processCountryData(src, dest, () => {
+		} else {
+			processCountryData(src, dest, 'Country data').then(() => {
 				cb(null, database);
 			});
 		}
 	} else if (type === 'city') {
 		processCityDataNames(src[0], dest[0], () => {
-			processCityData(src[1], dest[1]).then(() => {
-				process.stdout.write('\n');
-				log.info('City IPv4 data processed');
-				return processCityData(src[2], dest[2]);
+			processCityData(src[1], dest[1], 'City IPv4 data').then(() => {
+				return processCityData(src[2], dest[2], 'City IPv6 data');
 			}).then(() => {
-				log.info('City IPv6 data processed');
 				cb(null, database);
 			});
 		});
