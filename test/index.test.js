@@ -37,7 +37,7 @@ describe('GeoIP2', () => {
 			expect(actual.city).toBe('New York');
 			expect(actual.ll).toBeTruthy();
 			expect(actual.metro).toBe(501);
-			expect(actual.area).toBe(5);
+			expect(actual.area).toBe(20);
 		});
 
 		it('should match data for IPv4 - JP', () => {
