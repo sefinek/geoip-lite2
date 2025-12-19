@@ -214,12 +214,12 @@ function check(database, cb) {
 						log.info(`Database "${database.type}" is up to date`);
 						database.skip = true;
 					} else {
-						log.info(`Database "${database.type}" has new data available`);
+						log.info(`Database "${database.type}" has new data available!`);
 						database.checkValue = str;
 					}
 				}
 				else {
-					log.error(`Could not retrieve checksum for ${database.type}. Aborting.`);
+					log.error(`Could not retrieve checksum for ${database.type}. Aborting...`);
 					log.error('Run with "force" to update without checksum');
 					client.end();
 					process.exit(1);
@@ -241,7 +241,7 @@ function fetch(database, cb) {
 	const tmpFile = path.join(tmpPath, fileName);
 	if (fs.existsSync(tmpFile)) return cb(null, tmpFile, fileName, database);
 
-	log.info('Downloading:', fileName);
+	log.info(`Downloading ${fileName}...`);
 
 	const client = https.get(getHTTPOptions(downloadUrl), onResponse);
 
@@ -279,7 +279,7 @@ function extract(tmpFile, tmpFileName, database, cb) {
 	if (path.extname(tmpFileName) !== '.zip') {
 		cb(null, database);
 	} else {
-		log.info('Extracting ' + tmpFileName);
+		log.info(`Extracting ${tmpFileName}...`);
 		const zip = new AdmZip(tmpFile);
 		const zipEntries = zip.getEntries();
 
@@ -293,7 +293,6 @@ function extract(tmpFile, tmpFileName, database, cb) {
 			fs.writeFileSync(destinationPath, entry.getData());
 		});
 
-		log.info('Extracted ' + tmpFileName);
 		cb(null, database);
 	}
 }
@@ -309,7 +308,7 @@ function processLookupCountry(src, cb) {
 	}
 	const tmpDataFile = path.join(tmpPath, src);
 
-	log.info('Processing lookup data');
+	log.info('Processing lookup data...');
 
 	const rl = readline.createInterface({ input: fs.createReadStream(tmpDataFile).pipe(decodeStream('latin1')), output: process.stdout, terminal: false });
 
@@ -320,7 +319,6 @@ function processLookupCountry(src, cb) {
 	});
 
 	rl.on('close', () => {
-		log.info('Processed lookup data');
 		cb();
 	});
 }
@@ -337,7 +335,7 @@ async function processCountryData(src, dest) {
 	rimraf(dataFile);
 	mkdir(dataFile);
 
-	log.info('Processing country data');
+	log.info('Processing country data...');
 	let tstart = Date.now();
 	const datFile = fs.createWriteStream(dataFile);
 
@@ -446,7 +444,6 @@ async function processCountryData(src, dest) {
 		rl.on('error', finish);
 	});
 	datFile.close();
-	log.info('Processed country data');
 }
 
 async function processCityData(src, dest) {
@@ -456,7 +453,7 @@ async function processCityData(src, dest) {
 
 	rimraf(dataFile);
 
-	log.info('Processing city data');
+	log.info('Processing city data...');
 	let tstart = Date.now();
 	const datFile = fs.createWriteStream(dataFile);
 
