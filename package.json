@@ -72,8 +72,8 @@
   "scripts": {
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
+    "m": "ncu -u && npm install && npm update",
     "test": "jest test",
-    "up": "ncu -u && npm install && npm update && npm audit fix",
     "updatedb": "node tools/updatedb.js",
     "updatedb-debug": "node tools/updatedb.js debug",
     "updatedb-force": "node tools/updatedb.js force"
