@@ -37,7 +37,7 @@ You can see this module in action using my [official API](https://api.sefinek.ne
 
 
 ## 📑 Introduction
-MaxMind provides a set of data files for IP to Geo mapping along with opensource libraries to parse and lookup these data files.
+MaxMind provides a set of data files for IP to Geo mapping along with OpenSource libraries to parse and lookup these data files.
 One would typically write a wrapper around their C API to get access to this data in other languages (like JavaScript).
 
 GeoIP-Lite instead attempts to be a fully native JavaScript library. A converter script converts the CSV files from MaxMind into
@@ -50,7 +50,7 @@ information, city, region and postal code lookups are only supported for IPv4.
 
 ## 📚 Philosophy
 I was really aiming for a fast JavaScript native implementation for geomapping of IPs.
-My prime motivator was the fact that it was really hard to get libgeoip built for Mac OSX without using the library from MacPorts.
+My prime motivator was the fact that it was really hard to get libgeoip built for Mac OS X without using the library from MacPorts.
 
 
 ## 🕵️‍♂️ Why GeoIP-Lite?
@@ -95,12 +95,11 @@ npm install geoip-lite2
 ### 2. Update the datafiles (recommended)
 Run `cd node_modules/geoip-lite2 && npm run updatedb license_key=YOUR_LICENSE_KEY` to update the data files. (Replace `YOUR_LICENSE_KEY` with your license key obtained from [maxmind.com](https://support.maxmind.com/hc/en-us/articles/4407111582235-Generate-a-License-Key))
 
-You can create maxmind account [here](https://www.maxmind.com/en/geolite2/signup).
+You can create MaxMind account [here](https://www.maxmind.com/en/geolite2/signup).
 
 > [!NOTE]  
 > This requires a lot of RAM. It is known to fail on a Digital Ocean or AWS micro instance.
 > There are no plans to change this. GeoIP-Lite2 stores all data in RAM in order to be fast.
-> If you need an external API that provides GeoIP, you can use [this](#-demonstration).
 
 
 ## 🧩 API
