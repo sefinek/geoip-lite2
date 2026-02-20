@@ -24,7 +24,7 @@ Includes automated test coverage using [Jest](https://www.npmjs.com/package/jest
 
 
 ## ⚠️ Important
-> [!NOTE]  
+> [!WARNING]  
 > Remember to regularly update the MaxMind database! You will need a token for this.
 
 > [!NOTE]  
