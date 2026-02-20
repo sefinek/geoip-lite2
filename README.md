@@ -40,13 +40,9 @@ npm install geoip-lite2
 ```
 
 ### 2. Update the data files (recommended)
-Run `cd node_modules/geoip-lite2 && npm run updatedb license_key=YOUR_LICENSE_KEY` to update the data files. (Replace `YOUR_LICENSE_KEY` with your license key obtained from maxmind.com)
-
-You can create a MaxMind account here: https://www.maxmind.com/en/geolite2/signup
-
+Run `cd node_modules/geoip-lite2 && npm run updatedb license_key=YOUR_LICENSE_KEY` to update the data files. Replace `YOUR_LICENSE_KEY` with your license key obtained from [maxmind.com](https://www.maxmind.com/en/geolite2/signup).
 
 ## 📝 Short example
-
 ### Script
 ```js
 const geoIp = require('geoip-lite2');
@@ -69,7 +65,6 @@ console.log(geoIp.lookup(ip));
   "area": 20
 }
 ```
-
 
 
 ## 🌐 Live Demo API
