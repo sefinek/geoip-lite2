@@ -42,8 +42,7 @@ npm install geoip-lite2
 ### 2. Update the data files (recommended)
 Run `cd node_modules/geoip-lite2 && npm run updatedb license_key=YOUR_LICENSE_KEY` to update the data files. Replace `YOUR_LICENSE_KEY` with your license key obtained from [maxmind.com](https://support.maxmind.com/hc/en-us/articles/4407111582235-Generate-a-License-Key).
 
-## 📝 Short example
-### Script
+## 📝 Short Example
 ```js
 const geoIp = require('geoip-lite2');
 
@@ -118,7 +117,7 @@ console.log('IP is %s', geoIp.pretty(ip));
 The method returns a string if the input format is recognized, otherwise it returns the input itself.
 
 
-## 🔄 Built-in updater
+## 🔄 Built-in Updater
 This package contains an update script that downloads files from MaxMind and handles CSV conversion.
 A npm script alias has been configured to simplify this process. Internet access is required and MaxMind download limits apply.
 
