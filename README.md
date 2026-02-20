@@ -27,7 +27,7 @@ Includes automated test coverage using [Jest](https://www.npmjs.com/package/jest
 
 > [!NOTE]  
 > This requires a large amount of RAM. It is known to fail on a Digital Ocean or AWS micro instance.
-> There are no plans to change this behavior. GeoIP-Lite2 stores all data in RAM in order to be fast.
+> This behavior is intentional, as the library prioritizes performance by keeping all data in memory.
 
 > [!NOTE]  
 > Please note that IPv6 geolocation data may be less complete depending on the version of the GeoLite database.
@@ -183,7 +183,7 @@ The library may occasionally take up to 5 seconds to load into memory.
 This largely depends on disk load. It can take as little as 200 ms on a lightly loaded disk. This is a one-time cost.
 
 ### Memory usage
-A quick test shows that the library uses around 100 MB of RAM per process.
+The library uses approximately 180–230 MB of RAM per process, depending on the database version and environment.
 
 ```js
 require('geoip-lite2');
