@@ -1,10 +1,10 @@
 const assert = require('assert');
 const t1 = +new Date();
-const geoIp2 = require('../index.js');
+const geoIp = require('../index.js');
 const t2 = +new Date();
 
 if (process.argv.length > 2) {
-	console.dir(geoIp2.lookup(process.argv[2]));
+	console.dir(geoIp.lookup(process.argv[2]));
 	const t3 = +new Date();
 	console.log('Startup: %dms, exec: %dms', t2 - t1, t3 - t2);
 	process.exit(1);
@@ -31,7 +31,7 @@ for (let i = 0; i < n; i++) {
 			Math.round(Math.random() * 0xffff).toString(16) + '';
 	}
 
-	r = geoIp2.lookup(ip);
+	r = geoIp.lookup(ip);
 	if (r === null) {
 		nf.push(ip);
 		continue;
@@ -39,15 +39,15 @@ for (let i = 0; i < n; i++) {
 
 	f.push([ip, r]);
 
-	assert.ok(geoIp2.cmp(ip, r.range[0]) >= 0, 'Problem with ' + geoIp2.pretty(ip) + ' < ' + geoIp2.pretty(r.range[0]));
-	assert.ok(geoIp2.cmp(ip, r.range[1]) <= 0, 'Problem with ' + geoIp2.pretty(ip) + ' > ' + geoIp2.pretty(r.range[1]));
+	assert.ok(geoIp.cmp(ip, r.range[0]) >= 0, 'Problem with ' + geoIp.pretty(ip) + ' < ' + geoIp.pretty(r.range[0]));
+	assert.ok(geoIp.cmp(ip, r.range[1]) <= 0, 'Problem with ' + geoIp.pretty(ip) + ' > ' + geoIp.pretty(r.range[1]));
 }
 
 const te = +new Date();
 
 
 // f.forEach(data => {
-// 	console.log('%s bw %s & %s is %s', geoIp2.pretty(data[0]), geoIp2.pretty(data[1].range[0]), geoIp2.pretty(data[1].range[1]), data[1].country);
+// 	console.log('%s bw %s & %s is %s', geoIp.pretty(data[0]), geoIp.pretty(data[1].range[0]), geoIp.pretty(data[1].range[1]), data[1].country);
 // });
 
 

@@ -1,5 +1,5 @@
 const { describe, expect, it } = require('@jest/globals');
-const geoIp2 = require('../index.js');
+const geoIp = require('../index.js');
 
 describe('Performance Tests', () => {
 	describe('#LookupSpeed', () => {
@@ -8,7 +8,7 @@ describe('Performance Tests', () => {
 			const iterations = 1000;
 
 			for (let i = 0; i < iterations; i++) {
-				geoIp2.lookup('8.8.8.8');
+				geoIp.lookup('8.8.8.8');
 			}
 
 			const duration = Date.now() - start;
@@ -23,7 +23,7 @@ describe('Performance Tests', () => {
 			const iterations = 1000;
 
 			for (let i = 0; i < iterations; i++) {
-				geoIp2.lookup('2001:4860:4860::8888');
+				geoIp.lookup('2001:4860:4860::8888');
 			}
 
 			const duration = Date.now() - start;
@@ -46,7 +46,7 @@ describe('Performance Tests', () => {
 			const iterations = 500;
 
 			for (let i = 0; i < iterations; i++) {
-				ips.forEach(ip => geoIp2.lookup(ip));
+				ips.forEach(ip => geoIp.lookup(ip));
 			}
 
 			const duration = Date.now() - start;
@@ -63,7 +63,7 @@ describe('Performance Tests', () => {
 
 			for (let i = 0; i < iterations; i++) {
 				const ip = ips[i % ips.length];
-				geoIp2.lookup(ip);
+				geoIp.lookup(ip);
 			}
 
 			// If we reach here without crashing, memory is managed well
@@ -74,7 +74,7 @@ describe('Performance Tests', () => {
 			const iterations = 5000;
 
 			for (let i = 0; i < iterations; i++) {
-				geoIp2.lookup('192.168.1.' + (i % 255));
+				geoIp.lookup('192.168.1.' + (i % 255));
 			}
 
 			expect(true).toBe(true);
@@ -87,7 +87,7 @@ describe('Performance Tests', () => {
 
 			for (let i = 1; i < 256; i++) {
 				const ip = `8.8.8.${i}`;
-				const result = geoIp2.lookup(ip);
+				const result = geoIp.lookup(ip);
 				results.push(result);
 			}
 
@@ -105,7 +105,7 @@ describe('Performance Tests', () => {
 			}
 
 			const start = Date.now();
-			testIps.forEach(ip => geoIp2.lookup(ip));
+			testIps.forEach(ip => geoIp.lookup(ip));
 			const duration = Date.now() - start;
 
 			expect(duration).toBeLessThan(500);
@@ -119,7 +119,7 @@ describe('Performance Tests', () => {
 
 			for (let i = 0; i < 10; i++) {
 				const start = Date.now();
-				geoIp2.lookup(ip);
+				geoIp.lookup(ip);
 				timings.push(Date.now() - start);
 			}
 
@@ -136,7 +136,7 @@ describe('Performance Tests', () => {
 			let successCount = 0;
 
 			for (let i = 0; i < iterations; i++) {
-				const result = geoIp2.lookup('8.8.8.8');
+				const result = geoIp.lookup('8.8.8.8');
 				if (result !== null) successCount++;
 			}
 
@@ -152,7 +152,7 @@ describe('Performance Tests', () => {
 
 			for (let i = 0; i < 1000; i++) {
 				invalidInputs.forEach(input => {
-					geoIp2.lookup(input);
+					geoIp.lookup(input);
 				});
 			}
 
@@ -171,13 +171,13 @@ describe('Performance Tests', () => {
 
 			const start4 = Date.now();
 			for (let i = 0; i < iterations; i++) {
-				geoIp2.lookup(ipv4);
+				geoIp.lookup(ipv4);
 			}
 			const duration4 = Date.now() - start4;
 
 			const start6 = Date.now();
 			for (let i = 0; i < iterations; i++) {
-				geoIp2.lookup(ipv6);
+				geoIp.lookup(ipv6);
 			}
 			const duration6 = Date.now() - start6;
 

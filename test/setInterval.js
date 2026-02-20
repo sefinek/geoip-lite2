@@ -1,9 +1,9 @@
-const geoIp2 = require('../index.js');
+const geoIp = require('../index.js');
 const ip = '86.63.89.41';
 
 // Function
 const action = async () => {
-	const data = geoIp2.lookup(ip);
+	const data = geoIp.lookup(ip);
 	console.log(data);
 };
 

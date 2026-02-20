@@ -3,7 +3,7 @@
 // Verifies that all code optimizations are working correctly
 // ============================================================================
 
-const geoIp2 = require('../index.js');
+const geoIp = require('../index.js');
 const utils = require('../utils.js');
 
 console.log('╔════════════════════════════════════════════════════════════════╗');
@@ -24,7 +24,7 @@ const ipv6TestIP = '2001:4860:4860::8888';
 
 const ipv6Start = Date.now();
 for (let i = 0; i < ipv6TestIterations; i++) {
-	geoIp2.lookup(ipv6TestIP);
+	geoIp.lookup(ipv6TestIP);
 }
 const ipv6Duration = Date.now() - ipv6Start;
 const ipv6Throughput = Math.round(ipv6TestIterations / (ipv6Duration / 1000));
@@ -60,7 +60,7 @@ const mappedIPs = [
 const mappedStart = Date.now();
 for (let i = 0; i < 100000; i++) {
 	const ip = mappedIPs[i % mappedIPs.length];
-	geoIp2.lookup(ip);
+	geoIp.lookup(ip);
 }
 const mappedDuration = Date.now() - mappedStart;
 const mappedThroughput = Math.round(100000 / (mappedDuration / 1000));
@@ -148,7 +148,7 @@ const ipv4TestIP = '8.8.8.8';
 
 const ipv4Start = Date.now();
 for (let i = 0; i < ipv4TestIterations; i++) {
-	geoIp2.lookup(ipv4TestIP);
+	geoIp.lookup(ipv4TestIP);
 }
 const ipv4Duration = Date.now() - ipv4Start;
 const ipv4Throughput = Math.round(ipv4TestIterations / (ipv4Duration / 1000));
@@ -178,7 +178,7 @@ console.log('Verification: Private IPs return null immediately\n');
 const privateIPs = ['10.0.0.1', '192.168.1.1', '172.16.0.1'];
 const privateStart = Date.now();
 for (let i = 0; i < 100000; i++) {
-	geoIp2.lookup(privateIPs[i % privateIPs.length]);
+	geoIp.lookup(privateIPs[i % privateIPs.length]);
 }
 const privateDuration = Date.now() - privateStart;
 const privateThroughput = Math.round(100000 / (privateDuration / 1000));

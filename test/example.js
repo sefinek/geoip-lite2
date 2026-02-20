@@ -1,7 +1,7 @@
-const geoIp2 = require('../index.js');
+const geoIp = require('../index.js');
 
-const ipv4 = geoIp2.lookup('109.199.64.0');
+const ipv4 = geoIp.lookup('79.186.130.100');
 console.log(ipv4);
 
-const ipv6 = geoIp2.lookup('2001:470:1:c84::111');
+const ipv6 = geoIp.lookup('2a01:11bf:4222:900a:99ae:285f:7432:8f8e');
 console.log(ipv6);

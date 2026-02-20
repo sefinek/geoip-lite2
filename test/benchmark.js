@@ -1,4 +1,4 @@
-const geoIp2 = require('../index.js');
+const geoIp = require('../index.js');
 
 console.log('===== GeoIP2 Performance Benchmark =====\n');
 
@@ -9,7 +9,7 @@ const ipv4Iterations = 100000;
 const ipv4Start = Date.now();
 
 for (let i = 0; i < ipv4Iterations; i++) {
-	geoIp2.lookup(ipv4TestIP);
+	geoIp.lookup(ipv4TestIP);
 }
 
 const ipv4Duration = Date.now() - ipv4Start;
@@ -29,7 +29,7 @@ const ipv6Iterations = 100000;
 const ipv6Start = Date.now();
 
 for (let i = 0; i < ipv6Iterations; i++) {
-	geoIp2.lookup(ipv6TestIP);
+	geoIp.lookup(ipv6TestIP);
 }
 
 const ipv6Duration = Date.now() - ipv6Start;
@@ -60,7 +60,7 @@ const mixedStart = Date.now();
 
 for (let i = 0; i < mixedIterations; i++) {
 	const ip = mixedIPs[i % mixedIPs.length];
-	geoIp2.lookup(ip);
+	geoIp.lookup(ip);
 }
 
 const mixedDuration = Date.now() - mixedStart;
@@ -87,7 +87,7 @@ const privateStart = Date.now();
 
 for (let i = 0; i < privateIterations; i++) {
 	const ip = privateIPs[i % privateIPs.length];
-	geoIp2.lookup(ip);
+	geoIp.lookup(ip);
 }
 
 const privateDuration = Date.now() - privateStart;
@@ -108,7 +108,7 @@ const invalidStart = Date.now();
 
 for (let i = 0; i < invalidIterations; i++) {
 	const input = invalidInputs[i % invalidInputs.length];
-	geoIp2.lookup(input);
+	geoIp.lookup(input);
 }
 
 const invalidDuration = Date.now() - invalidStart;
