@@ -19,7 +19,7 @@
 
 # 🚀 Improved GeoIP Module by [Sefinek](https://sefinek.net)
 A maintained and optimized fork of [geoip-lite](https://github.com/geoip-lite/node-geoip) originally created by [Philip Tellis](AUTHORS).
-Fully native JavaScript implementation with synchronous, in-memory lookups for IPv4 and IPv6.
+Fully native JS implementation with synchronous, in-memory lookups for IPv4 and IPv6.
 Includes automated test coverage using [Jest](https://www.npmjs.com/package/jest).
 
 > [!WARNING]  
