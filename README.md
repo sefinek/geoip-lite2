@@ -22,8 +22,6 @@ A maintained and optimized fork of [geoip-lite](https://github.com/geoip-lite/no
 Fully native JavaScript implementation with synchronous, in-memory lookups for IPv4 and IPv6.
 Includes automated test coverage using [Jest](https://www.npmjs.com/package/jest).
 
-
-## ⚠️ Important
 > [!WARNING]  
 > Remember to regularly update the MaxMind database! You will need a token for this.
 
