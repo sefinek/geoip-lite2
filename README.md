@@ -7,13 +7,11 @@
         A native <a href="https://nodejs.org" target="_blank" title="Open nodejs.org">Node.js</a> API for GeoLite data from MaxMind.<br>
         This library includes GeoLite data created by MaxMind, available from <a href="https://www.maxmind.com" target="_blank" title="Open www.maxmind.com">maxmind.com</a>.
     </p>
-    <a href="https://www.npmjs.com/package/geoip-lite2" target="_blank" title="geoip-lite2 - npm" style="text-decoration:none">
-        <img src="https://img.shields.io/npm/dt/geoip-lite2?maxAge=3600" alt="Number of downloads">
-        <img src="https://img.shields.io/github/issues/sefinek/geoip-lite2" alt="Issues">
-        <img src="https://img.shields.io/github/last-commit/sefinek/geoip-lite2" alt="Last commit">
-        <img src="https://img.shields.io/github/commit-activity/w/sefinek/geoip-lite2" alt="Commit activity">
-        <img src="https://img.shields.io/github/languages/code-size/sefinek/geoip-lite2" alt="Code size">
-    </a>
+    <a href="https://www.npmjs.com/package/geoip-lite2" target="_blank"><img src="https://img.shields.io/npm/dt/geoip-lite2?maxAge=3600" alt="Number of downloads"></a>
+    <a href="https://github.com/sefinek/geoip-lite2/issues" target="_blank"><img src="https://img.shields.io/github/issues/sefinek/geoip-lite2" alt="Issues"></a>
+    <a href="https://github.com/sefinek/geoip-lite2/commits/main" target="_blank"><img src="https://img.shields.io/github/last-commit/sefinek/geoip-lite2" alt="Last commit"></a>
+    <a href="https://github.com/sefinek/geoip-lite2/commits/main" target="_blank"><img src="https://img.shields.io/github/commit-activity/w/sefinek/geoip-lite2" alt="Commit activity"></a>
+    <a href="https://github.com/sefinek/geoip-lite2" target="_blank"><img src="https://img.shields.io/github/languages/code-size/sefinek/geoip-lite2" alt="Code size"></a>
 </div>
 
 
