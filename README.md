@@ -1,5 +1,5 @@
 <div align="center">
-    <a href="https://cdn.sefinek.net/images/npm/geoip-lite2/banner.jpg?v=2.3.0-alpha.0" target="_blank" title="Full screen">
+    <a href="https://cdn.sefinek.net/images/npm/geoip-lite2/banner.png?v=2.3.0-alpha.0" target="_blank" title="Full screen">
         <img src="https://cdn.sefinek.net/images/npm/geoip-lite2/banner.png?v=2.3.0-alpha.0" alt="GeoIP-Lite v2.3 banner">
     </a>
     <br>    
