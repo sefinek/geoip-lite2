@@ -138,4 +138,86 @@ describe('Utility Functions', () => {
 			expect(utils.cmp6([638054608, 268566609, 4, 4], [638054608, 268566609, 0, 4])).toBe(1);
 		});
 	});
+
+	describe('#SharedGeoHelpers', () => {
+		it('should remove null terminator suffix', () => {
+			expect(utils.removeNullTerminator('abc\0def')).toBe('abc');
+			expect(utils.removeNullTerminator('abc')).toBe('abc');
+		});
+
+		it('should read all 128 bits for IPv6 address', () => {
+			const buffer = Buffer.alloc(48);
+			buffer.writeUInt32BE(1, 0);
+			buffer.writeUInt32BE(2, 4);
+			buffer.writeUInt32BE(3, 8);
+			buffer.writeUInt32BE(4, 12);
+
+			const ip = utils.readIp6(buffer, 0, 48, 0);
+			expect(ip).toEqual([1, 2, 3, 4]);
+		});
+
+		it('should create independent geo data objects', () => {
+			const first = utils.createGeoData();
+			const second = utils.createGeoData();
+
+			first.country = 'PL';
+			expect(second.country).toBe('');
+			expect(first).not.toBe(second);
+		});
+
+		it('should populate geo data from location buffers', () => {
+			const geoData = utils.createGeoData();
+			const locationBuffer = Buffer.alloc(88);
+			const coordBuffer = Buffer.alloc(24);
+
+			locationBuffer.write('US', 0);
+			locationBuffer.write('NY', 2);
+			locationBuffer.writeInt32BE(501, 5);
+			locationBuffer.write('0', 9);
+			locationBuffer.write('America/New_York', 10);
+			locationBuffer.write('New York', 42);
+
+			coordBuffer.writeInt32BE(407128, 12);
+			coordBuffer.writeInt32BE(-740060, 16);
+			coordBuffer.writeUInt32BE(20, 20);
+
+			utils.populateGeoDataFromLocation({
+				geoData,
+				locationBuffer,
+				locationRecordSize: 88,
+				locationId: 0,
+				coordBuffer,
+				latitudeOffset: 12,
+				longitudeOffset: 16,
+				areaOffset: 20,
+			});
+
+			expect(geoData.country).toBe('US');
+			expect(geoData.region).toBe('NY');
+			expect(geoData.metro).toBe(501);
+			expect(geoData.eu).toBe('0');
+			expect(geoData.timezone).toBe('America/New_York');
+			expect(geoData.city).toBe('New York');
+			expect(geoData.ll).toEqual([40.7128, -74.006]);
+			expect(geoData.area).toBe(20);
+		});
+
+		it('should skip fill when locationId has no location marker', () => {
+			const geoData = utils.createGeoData();
+			utils.populateGeoDataFromLocation({
+				geoData,
+				locationBuffer: Buffer.alloc(88),
+				locationRecordSize: 88,
+				locationId: -1 >>> 0,
+				coordBuffer: Buffer.alloc(24),
+				latitudeOffset: 12,
+				longitudeOffset: 16,
+				areaOffset: 20,
+			});
+
+			expect(geoData.country).toBe('');
+			expect(geoData.city).toBe('');
+			expect(geoData.ll).toEqual([null, null]);
+		});
+	});
 });

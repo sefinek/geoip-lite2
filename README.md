@@ -72,7 +72,8 @@ You can see this module in action using my [official API](https://api.sefinek.ne
 
 
 ## 📚 Library API
-GeoIP-Lite2 is completely synchronous. It does not use callbacks. All blocking file I/O is performed at startup, so all runtime calls are executed in-memory and are fast.
+GeoIP-Lite2 performs lookups synchronously in memory (`lookup`). It also provides async data reload methods (`reloadData`) and file watcher callbacks (`startWatchingDataUpdate`).
+All blocking file I/O is performed at startup, so all runtime lookups are fast.
 Startup may take up to 200 ms while reading and indexing data files into memory.
 
 ### Looking up an IP address
@@ -104,17 +105,6 @@ If the IP address was found, the `lookup` method returns an object with the foll
 
 If the IP address was not found, `lookup` returns `null`.
 
-### Pretty printing an IP address
-If you have a 32-bit unsigned integer or a number returned as part of the `range` array,
-you can use the `pretty` method to get a human-readable format.
-
-```js
-console.log('IP is %s', geoIp.pretty(ip));
-```
-
-The method returns a string if the input format is recognized, otherwise it returns the input itself.
-
-
 ## 🔄 Built-in Updater
 This package contains an update script that downloads files from MaxMind and handles CSV conversion.
 A npm script alias has been configured to simplify this process. Internet access is required and MaxMind download limits apply.
@@ -144,10 +134,13 @@ You can do it programmatically, calling after scheduled data updates
 // Synchronously
 geoIp.reloadDataSync();
 
-// Asynchronously
+// Asynchronously (callback)
 geoIp.reloadData(() => {
     console.log('Done');
 });
+
+// Asynchronously (Promise)
+await geoIp.reloadData();
 ```
 
 #### Automatic Start and stop watching for data updates
@@ -163,11 +156,11 @@ This tool can be used with `npm run updatedb` to periodically update geo data on
 The following environment variables can be set.
 
 ```bash
-# Override the default node_modules/geoip-lite/data dir
-GEOTMPDIR=/some/path
-
-# Override the default node_modules/geoip-lite/tmp dir
+# Override the default node_modules/geoip-lite2/data dir
 GEODATADIR=/some/path
+
+# Override the default node_modules/geoip-lite2/tmp dir
+GEOTMPDIR=/some/path
 ```
 
 

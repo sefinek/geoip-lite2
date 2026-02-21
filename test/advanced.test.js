@@ -82,27 +82,6 @@ describe('Advanced geoIp Tests', () => {
 		});
 	});
 
-	describe('#PrettyFunction', () => {
-		it('should return string as-is', () => {
-			expect(geoIp.pretty('1.2.3.4')).toBe('1.2.3.4');
-		});
-
-		it('should convert number to IPv4', () => {
-			const result = geoIp.pretty(16843009);
-			expect(result).toBe('1.1.1.1');
-		});
-
-		it('should convert array to IPv6', () => {
-			const result = geoIp.pretty([0, 0, 0, 1]);
-			expect(result).toContain('::');
-		});
-
-		it('should return other types unchanged', () => {
-			expect(geoIp.pretty(null)).toBeNull();
-			expect(geoIp.pretty(undefined)).toBeUndefined();
-		});
-	});
-
 	describe('#DataStructure', () => {
 		it('should return correct data structure', () => {
 			const result = geoIp.lookup('8.8.8.8');

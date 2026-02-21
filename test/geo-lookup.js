@@ -1,4 +1,5 @@
 const assert = require('assert');
+const utils = require('../utils.js');
 const t1 = +new Date();
 const geoIp = require('../index.js');
 const t2 = +new Date();
@@ -39,15 +40,15 @@ for (let i = 0; i < n; i++) {
 
 	f.push([ip, r]);
 
-	assert.ok(geoIp.cmp(ip, r.range[0]) >= 0, 'Problem with ' + geoIp.pretty(ip) + ' < ' + geoIp.pretty(r.range[0]));
-	assert.ok(geoIp.cmp(ip, r.range[1]) <= 0, 'Problem with ' + geoIp.pretty(ip) + ' > ' + geoIp.pretty(r.range[1]));
+	assert.ok(utils.cmp(ip, r.range[0]) >= 0, 'Problem with ' + ip + ' < ' + r.range[0]);
+	assert.ok(utils.cmp(ip, r.range[1]) <= 0, 'Problem with ' + ip + ' > ' + r.range[1]);
 }
 
 const te = +new Date();
 
 
 // f.forEach(data => {
-// 	console.log('%s bw %s & %s is %s', geoIp.pretty(data[0]), geoIp.pretty(data[1].range[0]), geoIp.pretty(data[1].range[1]), data[1].country);
+// 	console.log('%s bw %s & %s is %s', data[0], data[1].range[0], data[1].range[1], data[1].country);
 // });
 
 

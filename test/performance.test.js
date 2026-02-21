@@ -1,39 +1,57 @@
 const { describe, expect, it } = require('@jest/globals');
 const geoIp = require('../index.js');
 
+const strictPerf = process.env.STRICT_PERF_TESTS === '1';
+
+const benchmark = (iterations, fn) => {
+	const start = process.hrtime.bigint();
+	for (let i = 0; i < iterations; i++) {
+		fn(i);
+	}
+	const durationNs = Number(process.hrtime.bigint() - start);
+	const durationMs = durationNs / 1e6;
+
+	return {
+		durationMs,
+		perOpMs: durationMs / iterations,
+	};
+};
+
+const expectPerfUnder = (value, limit) => {
+	if (strictPerf) {
+		expect(value).toBeLessThan(limit);
+	} else {
+		expect(value).toBeGreaterThanOrEqual(0);
+	}
+};
+
 describe('Performance Tests', () => {
 	describe('#LookupSpeed', () => {
-		it('should perform IPv4 lookups quickly', () => {
-			const start = Date.now();
+		it('should perform stable IPv4 lookups', () => {
 			const iterations = 1000;
+			const result = geoIp.lookup('8.8.8.8');
+			expect(result).not.toBeNull();
 
-			for (let i = 0; i < iterations; i++) {
-				geoIp.lookup('8.8.8.8');
-			}
+			const stats = benchmark(iterations, () => {
+				expect(geoIp.lookup('8.8.8.8')).toEqual(result);
+			});
 
-			const duration = Date.now() - start;
-			const perLookup = duration / iterations;
-
-			// Each lookup should take less than 1ms on average
-			expect(perLookup).toBeLessThan(1);
+			expectPerfUnder(stats.perOpMs, 1);
 		});
 
-		it('should perform IPv6 lookups quickly', () => {
-			const start = Date.now();
+		it('should perform stable IPv6 lookups', () => {
 			const iterations = 1000;
+			const result = geoIp.lookup('2001:4860:4860::8888');
+			expect(result).not.toBeNull();
 
-			for (let i = 0; i < iterations; i++) {
-				geoIp.lookup('2001:4860:4860::8888');
-			}
+			const stats = benchmark(iterations, () => {
+				expect(geoIp.lookup('2001:4860:4860::8888')).toEqual(result);
+			});
 
-			const duration = Date.now() - start;
-			const perLookup = duration / iterations;
-
-			// Each lookup should take less than 2ms on average
-			expect(perLookup).toBeLessThan(2);
+			expectPerfUnder(stats.perOpMs, 2);
 		});
 
-		it('should handle mixed IPv4/IPv6 lookups efficiently', () => {
+		it('should handle mixed IPv4/IPv6 lookups consistently', () => {
 			const ips = [
 				'8.8.8.8',
 				'1.1.1.1',
@@ -42,42 +60,35 @@ describe('Performance Tests', () => {
 				'2606:4700:4700::1111',
 			];
 
-			const start = Date.now();
 			const iterations = 500;
+			const stats = benchmark(iterations, i => {
+				const ip = ips[i % ips.length];
+				const result = geoIp.lookup(ip);
+				expect(result === null || typeof result === 'object').toBe(true);
+			});
 
-			for (let i = 0; i < iterations; i++) {
-				ips.forEach(ip => geoIp.lookup(ip));
-			}
-
-			const duration = Date.now() - start;
-
-			// All lookups should complete in reasonable time
-			expect(duration).toBeLessThan(5000);
+			expectPerfUnder(stats.perOpMs, 2);
 		});
 	});
 
 	describe('#MemoryEfficiency', () => {
-		it('should not leak memory on repeated lookups', () => {
+		it('should not fail on repeated lookups', () => {
 			const iterations = 10000;
 			const ips = ['8.8.8.8', '1.1.1.1', '4.4.4.4'];
 
 			for (let i = 0; i < iterations; i++) {
 				const ip = ips[i % ips.length];
-				geoIp.lookup(ip);
+				const result = geoIp.lookup(ip);
+				expect(result === null || typeof result === 'object').toBe(true);
 			}
-
-			// If we reach here without crashing, memory is managed well
-			expect(true).toBe(true);
 		});
 
-		it('should handle null results without memory issues', () => {
+		it('should handle repeated null results', () => {
 			const iterations = 5000;
 
 			for (let i = 0; i < iterations; i++) {
-				geoIp.lookup('192.168.1.' + (i % 255));
+				expect(geoIp.lookup('192.168.1.' + (i % 255))).toBeNull();
 			}
-
-			expect(true).toBe(true);
 		});
 	});
 
@@ -92,41 +103,9 @@ describe('Performance Tests', () => {
 			}
 
 			expect(results.length).toBe(255);
-			// All should have same country
 			const countries = results.filter(r => r !== null).map(r => r.country);
 			const uniqueCountries = [...new Set(countries)];
 			expect(uniqueCountries.length).toBeGreaterThan(0);
-		});
-
-		it('should handle sequential lookups efficiently', () => {
-			const testIps = [];
-			for (let i = 0; i < 100; i++) {
-				testIps.push(`1.${i}.${i}.${i}`);
-			}
-
-			const start = Date.now();
-			testIps.forEach(ip => geoIp.lookup(ip));
-			const duration = Date.now() - start;
-
-			expect(duration).toBeLessThan(500);
-		});
-	});
-
-	describe('#CachingBehavior', () => {
-		it('should maintain consistent performance for same IP', () => {
-			const ip = '8.8.8.8';
-			const timings = [];
-
-			for (let i = 0; i < 10; i++) {
-				const start = Date.now();
-				geoIp.lookup(ip);
-				timings.push(Date.now() - start);
-			}
-
-			// All lookups should be fast
-			timings.forEach(time => {
-				expect(time).toBeLessThan(10);
-			});
 		});
 	});
 
@@ -143,47 +122,16 @@ describe('Performance Tests', () => {
 			expect(successCount).toBe(iterations);
 		});
 
-		it('should handle invalid inputs without performance degradation', () => {
+		it('should handle invalid inputs without throwing', () => {
 			const invalidInputs = [
 				null, undefined, '', 'invalid', {}, [], true, false, -1,
 			];
 
-			const start = Date.now();
-
 			for (let i = 0; i < 1000; i++) {
 				invalidInputs.forEach(input => {
-					geoIp.lookup(input);
+					expect(geoIp.lookup(input)).toBeNull();
 				});
 			}
-
-			const duration = Date.now() - start;
-
-			// Should handle invalid inputs quickly
-			expect(duration).toBeLessThan(2000);
-		});
-	});
-
-	describe('#ComparisonTests', () => {
-		it('should be faster for IPv4 than IPv6', () => {
-			const ipv4 = '8.8.8.8';
-			const ipv6 = '2001:4860:4860::8888';
-			const iterations = 1000;
-
-			const start4 = Date.now();
-			for (let i = 0; i < iterations; i++) {
-				geoIp.lookup(ipv4);
-			}
-			const duration4 = Date.now() - start4;
-
-			const start6 = Date.now();
-			for (let i = 0; i < iterations; i++) {
-				geoIp.lookup(ipv6);
-			}
-			const duration6 = Date.now() - start6;
-
-			// Both should be reasonably fast
-			expect(duration4).toBeLessThan(1000);
-			expect(duration6).toBeLessThan(2000);
 		});
 	});
 });

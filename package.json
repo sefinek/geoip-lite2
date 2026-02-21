@@ -1,6 +1,6 @@
 {
   "name": "geoip-lite2",
-  "version": "2.3.0-alpha.0",
+  "version": "3.0.0-alpha.0",
   "description": "Fast, native implementation of the GeoIP API from MaxMind in JavaScript. An improved version by Sefinek, continuously maintained.",
   "keywords": [
     "geoip",
@@ -68,6 +68,7 @@
   "dependencies": {
     "adm-zip": "^0.5.16",
     "async": "^3.2.6",
+    "https-proxy-agent": "^7.0.6",
     "iconv-lite": "0.7.2",
     "ip-address": "^10.1.0",
     "rimraf": "^6.1.3"

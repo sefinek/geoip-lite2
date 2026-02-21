@@ -1,13 +1,4 @@
-// ============================================================================
-// GeoIP Database Updater
-// Fetches and converts MaxMind GeoLite2 databases
-// ============================================================================
-
 'use strict';
-
-// ============================================================================
-// Dependencies
-// ============================================================================
 
 const { name, version } = require('../package.json');
 const UserAgent = `Mozilla/5.0 (compatible; ${name}/${version}; +https://github.com/sefinek/geoip-lite2)`;
@@ -25,22 +16,12 @@ const rimraf = require('rimraf').sync;
 const AdmZip = require('adm-zip');
 const utils = require('../utils.js');
 const { Address6, Address4 } = require('ip-address');
-
-// ============================================================================
-// Utility Functions - Logging
-// ============================================================================
-
-// Logging utility for consistent and readable output
 const log = {
 	info: (msg, ...logArgs) => console.log(`[INFO] ${msg}`, ...logArgs),
 	success: (msg, ...logArgs) => console.log(`[SUCCESS] ${msg}`, ...logArgs),
 	warn: (msg, ...logArgs) => console.warn(`[WARN] ${msg}`, ...logArgs),
 	error: (msg, ...logArgs) => console.error(`[ERROR] ${msg}`, ...logArgs),
 };
-
-// ============================================================================
-// Configuration
-// ============================================================================
 
 const args = process.argv.slice(2);
 let license_key = args.find(arg => arg.match(/^license_key=[a-zA-Z0-9]+/) !== null);
@@ -90,22 +71,14 @@ const databases = [{
 	dest: ['geoip-city-names.dat', 'geoip-city.dat', 'geoip-city6.dat'],
 }];
 
-// ============================================================================
-// Utility Functions
-// ============================================================================
-
-function mkdir(dirName) {
+const mkdir = dirName => {
 	const dir = path.dirname(dirName);
 	if (!fs.existsSync(dir)) fs.mkdirSync(dir);
-}
+};
 
-// Ref: http://stackoverflow.com/questions/8493195/how-can-i-parse-a-csv-string-with-javascript
-// Return array of string values, or NULL if CSV string not well-formed.
-
-function tryFixingLine(line) {
+const tryFixingLine = line => {
 	let pos1 = 0;
 	let pos2 = -1;
-	// Escape quotes
 	line = line.replace(/""/, '\\"').replace(/'/g, '\\\'');
 
 	while (pos1 < line.length && pos2 < line.length) {
@@ -119,41 +92,35 @@ function tryFixingLine(line) {
 		}
 	}
 	return line;
-}
+};
 
 const re_valid = /^\s*(?:'[^'\\]*(?:\\[\S\s][^'\\]*)*'|"[^"\\]*(?:\\[\S\s][^"\\]*)*"|[^,'"\s\\]*(?:\s+[^,'"\s\\]+)*)\s*(?:,\s*(?:'[^'\\]*(?:\\[\S\s][^'\\]*)*'|"[^"\\]*(?:\\[\S\s][^"\\]*)*"|[^,'"\s\\]*(?:\s+[^,'"\s\\]+)*)\s*)*$/;
 const re_value = /(?!\s*$)\s*(?:'([^'\\]*(?:\\[\S\s][^'\\]*)*)'|"([^"\\]*(?:\\[\S\s][^"\\]*)*)"|([^,'"\s\\]*(?:\s+[^,'"\s\\]+)*))\s*(?:,|$)/g;
 
-function CSVtoArray(text) {
-	// Return NULL if input string is not well-formed CSV string.
+const CSVtoArray = text => {
 	if (!re_valid.test(text)) {
 		text = tryFixingLine(text);
 		if (!re_valid.test(text)) return null;
 	}
-	const a = []; // Initialize array to receive values.
-	text.replace(re_value, // "Walk" the string using replace with callback.
+	const a = [];
+	text.replace(re_value,
 		(m0, m1, m2, m3) => {
-			// Remove backslash from \' in single quoted values.
 			if (m1 !== undefined) a.push(m1.replace(/\\'/g, '\''));
-			// Remove backslash from \" in double-quoted values.
 			else if (m2 !== undefined) a.push(m2.replace(/\\"/g, '"').replace(/\\'/g, '\''));
 			else if (m3 !== undefined) a.push(m3);
-			return ''; // Return empty string.
+			return '';
 		});
-	// Handle special case of empty last value.
 	if ((/,\s*$/).test(text)) a.push('');
 	return a;
-}
+};
 
-// ============================================================================
-// HTTP Configuration
-// ============================================================================
-
-function getHTTPOptions(downloadUrl) {
+const getHTTPOptions = downloadUrl => {
 	const parsedUrl = new URL(downloadUrl);
+	/** @type {import('node:https').RequestOptions} */
 	const options = {
 		protocol: parsedUrl.protocol,
-		host: parsedUrl.host,
+		hostname: parsedUrl.hostname,
+		port: parsedUrl.port ? Number.parseInt(parsedUrl.port, 10) : undefined,
 		path: parsedUrl.pathname + parsedUrl.search,
 		headers: { 'User-Agent': UserAgent },
 	};
@@ -169,37 +136,126 @@ function getHTTPOptions(downloadUrl) {
 	}
 
 	return options;
-}
+};
 
-// ============================================================================
-// Database Download Functions
-// ============================================================================
+const REDIRECT_STATUS_CODES = new Set([301, 302, 303, 307, 308]);
 
-function check(database, cb) {
+const requestWithRedirect = (downloadUrl, onResponse) => {
+	const executeRequest = url => {
+		const req = https.get(getHTTPOptions(url), response => {
+			const status = response.statusCode || 0;
+
+			if (REDIRECT_STATUS_CODES.has(status)) {
+				const redirectLocation = response.headers.location;
+				if (!redirectLocation) {
+					log.error('HTTP redirect response without location header [%d]', status);
+					process.exit(1);
+				}
+
+				response.resume();
+				const redirectUrl = new URL(redirectLocation, url).toString();
+				executeRequest(redirectUrl);
+				return;
+			}
+
+			onResponse(response, status);
+		});
+
+		req.on('error', err => {
+			log.error('HTTP request failed:', err.message);
+			process.exit(1);
+		});
+	};
+
+	executeRequest(downloadUrl);
+};
+
+const writeBuffer = (stream, buffer) => new Promise((resolve, reject) => {
+	const onError = err => {
+		reject(err);
+	};
+
+	const onDrain = () => {
+		stream.off('error', onError);
+		resolve();
+	};
+
+	stream.once('error', onError);
+
+	if (stream.write(buffer)) {
+		stream.off('error', onError);
+		resolve();
+		return;
+	}
+
+	stream.once('drain', onDrain);
+});
+
+const closeWriteStream = stream => new Promise((resolve, reject) => {
+	stream.end(err => {
+		if (err) reject(err);
+		else resolve();
+	});
+});
+
+const processDataFileByLine = (tmpDataFile, onDataLine) => new Promise((resolve, reject) => {
+	const rl = readline.createInterface({ input: fs.createReadStream(tmpDataFile), crlfDelay: Infinity });
+	let settled = false;
+	let closed = false;
+	let lineNumber = 0;
+
+	const finish = err => {
+		if (settled) return;
+		settled = true;
+
+		if (err) {
+			if (!closed) rl.close();
+			reject(err);
+			return;
+		}
+
+		resolve();
+	};
+
+	rl.on('line', line => {
+		if (settled) return;
+
+		lineNumber++;
+		if (lineNumber === 1) return;
+
+		rl.pause();
+		Promise.resolve()
+			.then(() => onDataLine(line))
+			.then(() => {
+				if (!settled) rl.resume();
+			})
+			.catch(finish);
+	});
+
+	rl.on('close', () => {
+		closed = true;
+		finish();
+	});
+
+	rl.on('error', finish);
+});
+
+const check = (database, cb) => {
 	if (args.indexOf('force') !== -1) {
-		// We are forcing database upgrade,
-		// So not even using checksums
 		return cb(null, database);
 	}
 
 	const checksumUrl = database.checksum;
-	if (typeof checksumUrl === 'undefined') return cb(null, database); // No checksum url to check, skipping
-
-	// Read existing checksum file
+	if (typeof checksumUrl === 'undefined') return cb(null, database);
 	fs.readFile(path.join(dataPath, `${database.type}.checksum`), { encoding: 'utf8' }, (err, data) => {
 		if (!err && data && data.length) database.checkValue = data;
 
 		log.info('Checking database:', database.fileName);
 
-		const client = https.get(getHTTPOptions(checksumUrl), onResponse);
-
-		function onResponse(response) {
-			const status = response.statusCode;
-			if ([301, 302, 303, 307, 308].includes(status)) {
-				return https.get(getHTTPOptions(response.headers.location), onResponse);
-			} else if (status !== 200) {
+		requestWithRedirect(checksumUrl, (response, status) => {
+			if (status !== 200) {
 				log.error('HTTP Request Failed [%d %s]', status, http.STATUS_CODES[status]);
-				client.end();
+				response.destroy();
 				process.exit(1);
 			}
 
@@ -221,16 +277,16 @@ function check(database, cb) {
 				else {
 					log.error(`Could not retrieve checksum for ${database.type}. Aborting...`);
 					log.error('Run with "force" to update without checksum');
-					client.end();
+					response.destroy();
 					process.exit(1);
 				}
 				cb(null, database);
 			});
-		}
+		});
 	});
-}
+};
 
-function fetch(database, cb) {
+const fetch = (database, cb) => {
 	if (database.skip) return cb(null, null, null, database);
 
 	const downloadUrl = database.url;
@@ -242,16 +298,12 @@ function fetch(database, cb) {
 	if (fs.existsSync(tmpFile)) return cb(null, tmpFile, fileName, database);
 
 	log.info(`Downloading ${fileName}...`);
+	mkdir(tmpFile);
 
-	const client = https.get(getHTTPOptions(downloadUrl), onResponse);
-
-	function onResponse(response) {
-		const status = response.statusCode;
-		if ([301, 302, 303, 307, 308].includes(status)) {
-			return https.get(getHTTPOptions(response.headers.location), onResponse);
-		} else if (status !== 200) {
+	requestWithRedirect(downloadUrl, (response, status) => {
+		if (status !== 200) {
 			log.error('HTTP Request Failed [%d %s]', status, http.STATUS_CODES[status]);
-			client.end();
+			response.destroy();
 			process.exit(1);
 		}
 
@@ -268,12 +320,10 @@ function fetch(database, cb) {
 			log.info(`Retrieved ${fileName}`);
 			cb(null, tmpFile, fileName, database);
 		});
-	}
+	});
+};
 
-	mkdir(tmpFile);
-}
-
-function extract(tmpFile, tmpFileName, database, cb) {
+const extract = (tmpFile, tmpFileName, database, cb) => {
 	if (database.skip) return cb(null, database);
 
 	if (path.extname(tmpFileName) !== '.zip') {
@@ -284,7 +334,7 @@ function extract(tmpFile, tmpFileName, database, cb) {
 		const zipEntries = zip.getEntries();
 
 		zipEntries.forEach((entry) => {
-			if (entry.isDirectory) return; // Skip directory entries
+			if (entry.isDirectory) return;
 
 			const filePath = entry.entryName.split('/');
 			const fileName = filePath[filePath.length - 1];
@@ -295,22 +345,30 @@ function extract(tmpFile, tmpFileName, database, cb) {
 
 		cb(null, database);
 	}
-}
+};
 
-function processLookupCountry(src, cb) {
-	function processLine(line) {
+const processLookupCountry = (src, cb) => {
+	const processLine = line => {
 		const fields = CSVtoArray(line);
 		if (!fields || fields.length < 6) {
 			log.warn('Malformed line detected:', line);
 			return;
 		}
 		countryLookup[fields[0]] = fields[4];
-	}
+	};
 	const tmpDataFile = path.join(tmpPath, src);
 
 	log.info('Processing lookup data...');
 
 	const rl = readline.createInterface({ input: fs.createReadStream(tmpDataFile).pipe(decodeStream('latin1')), output: process.stdout, terminal: false });
+	let settled = false;
+
+	const finish = err => {
+		if (settled) return;
+		settled = true;
+		if (err) cb(err);
+		else cb();
+	};
 
 	let lineCount = 0;
 	rl.on('line', line => {
@@ -318,16 +376,11 @@ function processLookupCountry(src, cb) {
 		lineCount++;
 	});
 
-	rl.on('close', () => {
-		cb();
-	});
-}
+	rl.on('close', () => finish());
+	rl.on('error', finish);
+};
 
-// ============================================================================
-// Data Processing Functions
-// ============================================================================
-
-async function processCountryData(src, dest) {
+const processCountryData = async (src, dest) => {
 	let lines = 0;
 	const dataFile = path.join(dataPath, dest);
 	const tmpDataFile = path.join(tmpPath, src);
@@ -339,7 +392,7 @@ async function processCountryData(src, dest) {
 	let tstart = Date.now();
 	const datFile = fs.createWriteStream(dataFile);
 
-	function processLine(line) {
+	const processLine = async line => {
 		const fields = CSVtoArray(line);
 		if (!fields || fields.length < 6) return log.warn('Malformed line detected:', line);
 
@@ -354,7 +407,6 @@ async function processCountryData(src, dest) {
 		let i;
 		if (cc) {
 			if (fields[0].match(/:/)) {
-				// IPv6
 				bsz = 34;
 				rngip = new Address6(fields[0]);
 				sip = utils.aton6(rngip.startAddress().correctForm());
@@ -369,7 +421,6 @@ async function processCountryData(src, dest) {
 					b.writeUInt32BE(eip[i], 16 + (i * 4));
 				}
 			} else {
-				// IPv4
 				bsz = 10;
 
 				rngip = new Address4(fields[0]);
@@ -388,65 +439,22 @@ async function processCountryData(src, dest) {
 				log.info(`Processing country data (${lines} entries)`);
 			}
 
-			if (datFile._writableState.needDrain) {
-				return new Promise(resolve => {
-					datFile.write(b, resolve);
-				});
-			} else {
-				return datFile.write(b);
-			}
+			await writeBuffer(datFile, b);
 		}
+	};
+
+	let processingError = null;
+	try {
+		await processDataFileByLine(tmpDataFile, processLine);
+	} catch (err) {
+		processingError = err;
 	}
 
-	await new Promise((resolve, reject) => {
-		const rl = readline.createInterface({ input: fs.createReadStream(tmpDataFile), crlfDelay: Infinity });
-		let settled = false;
-		let i = 0;
+	await closeWriteStream(datFile);
+	if (processingError) throw processingError;
+};
 
-		function finish(err) {
-			if (settled) return;
-			settled = true;
-			if (!rl.closed) rl.close();
-			if (err) reject(err);
-			else resolve();
-		}
-
-		function resume() {
-			if (!settled && !rl.closed) rl.resume();
-		}
-
-		rl.on('line', line => {
-			rl.pause();
-			i++;
-			if (i === 1) {
-				resume();
-				return;
-			}
-
-			let result;
-			try {
-				result = processLine(line);
-			} catch (err) {
-				finish(err);
-				return;
-			}
-
-			if (result && typeof result.then === 'function') {
-				result.then(() => {
-					resume();
-				}).catch(finish);
-			} else {
-				resume();
-			}
-		});
-
-		rl.on('close', () => finish());
-		rl.on('error', finish);
-	});
-	datFile.close();
-}
-
-async function processCityData(src, dest) {
+const processCityData = async (src, dest) => {
 	let lines = 0;
 	const dataFile = path.join(dataPath, dest);
 	const tmpDataFile = path.join(tmpPath, src);
@@ -457,7 +465,7 @@ async function processCityData(src, dest) {
 	let tstart = Date.now();
 	const datFile = fs.createWriteStream(dataFile);
 
-	async function processLine(line) {
+	const processLine = async line => {
 		if (line.match(/^Copyright/) || !line.match(/\d/)) return;
 
 		const fields = CSVtoArray(line);
@@ -477,7 +485,6 @@ async function processCityData(src, dest) {
 		lines++;
 
 		if (fields[0].match(/:/)) {
-			// IPv6
 			let offset = 0;
 			bsz = 48;
 			rngip = new Address6(fields[0]);
@@ -507,7 +514,6 @@ async function processCityData(src, dest) {
 			b.writeInt32BE(lon, 40);
 			b.writeInt32BE(area, 44);
 		} else {
-			// IPv4
 			bsz = 24;
 
 			rngip = new Address4(fields[0]);
@@ -534,64 +540,21 @@ async function processCityData(src, dest) {
 			log.info(`Processing city data (${lines} entries)`);
 		}
 
-		if (datFile._writableState.needDrain) {
-			return new Promise((resolve) => {
-				datFile.write(b, resolve);
-			});
-		} else {
-			return datFile.write(b);
-		}
+		await writeBuffer(datFile, b);
+	};
+
+	let processingError = null;
+	try {
+		await processDataFileByLine(tmpDataFile, processLine);
+	} catch (err) {
+		processingError = err;
 	}
 
-	await new Promise((resolve, reject) => {
-		const rl = readline.createInterface({ input: fs.createReadStream(tmpDataFile), crlfDelay: Infinity });
-		let settled = false;
-		let i = 0;
+	await closeWriteStream(datFile);
+	if (processingError) throw processingError;
+};
 
-		function finish(err) {
-			if (settled) return;
-			settled = true;
-			if (!rl.closed) rl.close();
-			if (err) reject(err);
-			else resolve();
-		}
-
-		function resume() {
-			if (!settled && !rl.closed) rl.resume();
-		}
-
-		rl.on('line', line => {
-			rl.pause();
-			i++;
-			if (i === 1) {
-				resume();
-				return;
-			}
-
-			let result;
-			try {
-				result = processLine(line);
-			} catch (err) {
-				finish(err);
-				return;
-			}
-
-			if (result && typeof result.then === 'function') {
-				result.then(() => {
-					resume();
-				}).catch(finish);
-			} else {
-				resume();
-			}
-		});
-
-		rl.on('close', () => finish());
-		rl.on('error', finish);
-	});
-	datFile.close();
-}
-
-function processCityDataNames(src, dest, cb) {
+const processCityDataNames = (src, dest, cb) => {
 	let locId = null;
 	let linesCount = 0;
 	const dataFile = path.join(dataPath, dest);
@@ -601,13 +564,12 @@ function processCityDataNames(src, dest, cb) {
 
 	const datFile = fs.openSync(dataFile, 'w');
 
-	function processLine(line) {
+	const processLine = (line) => {
 		if (line.match(/^Copyright/) || !line.match(/\d/)) return;
 
 		const b = Buffer.alloc(88);
 		const fields = CSVtoArray(line);
 		if (!fields) {
-			// Lots of cities contain ` or ' in the name and can't be parsed correctly with current method
 			log.warn('Malformed line detected:', line);
 			return;
 		}
@@ -619,24 +581,32 @@ function processCityDataNames(src, dest, cb) {
 		const rg = fields[6];
 		const city = fields[10];
 		const metro = parseInt(fields[11]);
-		// Other possible fields to include
 		const tz = fields[12];
 		const eu = fields[13];
 
 		b.fill(0);
-		b.write(cc, 0); // Country code
-		b.write(rg, 2); // Region
+		b.write(cc, 0);
+		b.write(rg, 2);
 
 		if (metro) b.writeInt32BE(metro, 5);
-		b.write(eu, 9); // Is in eu
-		b.write(tz, 10); // Timezone
-		b.write(city, 42); // City name
+		b.write(eu, 9);
+		b.write(tz, 10);
+		b.write(city, 42);
 
 		fs.writeSync(datFile, b, 0, b.length, null);
 		linesCount++;
-	}
+	};
 
 	const rl = readline.createInterface({ input: fs.createReadStream(tmpDataFile).pipe(decodeStream('utf-8')), output: process.stdout, terminal: false });
+	let settled = false;
+
+	const finish = (err) => {
+		if (settled) return;
+		settled = true;
+		fs.closeSync(datFile);
+		if (err) cb(err);
+		else cb();
+	};
 
 	let lineCount = 0;
 	rl.on('line', line => {
@@ -645,14 +615,11 @@ function processCityDataNames(src, dest, cb) {
 		lineCount++;
 	});
 
-	rl.on('close', cb);
-}
+	rl.on('close', () => finish());
+	rl.on('error', finish);
+};
 
-// ============================================================================
-// Main Processing Dispatcher
-// ============================================================================
-
-function processData(database, cb) {
+const processData = (database, cb) => {
 	if (database.skip) return cb(null, database);
 
 	const type = database.type;
@@ -661,48 +628,42 @@ function processData(database, cb) {
 
 	if (type === 'country') {
 		if (Array.isArray(src)) {
-			processLookupCountry(src[0], () => {
+			processLookupCountry(src[0], err => {
+				if (err) return cb(err);
 				processCountryData(src[1], dest[1]).then(() => {
 					return processCountryData(src[2], dest[2]);
 				}).then(() => {
 					cb(null, database);
-				});
+				}).catch(cb);
 			});
 		}
 		else {
-			processCountryData(src, dest, () => {
+			processCountryData(src, dest).then(() => {
 				cb(null, database);
-			});
+			}).catch(cb);
 		}
 	} else if (type === 'city') {
-		processCityDataNames(src[0], dest[0], () => {
+		processCityDataNames(src[0], dest[0], err => {
+			if (err) return cb(err);
 			processCityData(src[1], dest[1]).then(() => {
 				log.info('Processed city IPv4 data');
 				return processCityData(src[2], dest[2]);
 			}).then(() => {
 				log.info('Processed city IPv6 data');
 				cb(null, database);
-			});
+			}).catch(cb);
 		});
 	}
-}
+};
 
-// ============================================================================
-// Checksum Management
-// ============================================================================
-
-function updateChecksum(database, cb) {
-	if (database.skip || !database.checkValue) return cb(); // Don't need to update checksums because it was not fetched or did not change
+const updateChecksum = (database, cb) => {
+	if (database.skip || !database.checkValue) return cb();
 
 	fs.writeFile(path.join(dataPath, database.type + '.checksum'), database.checkValue, 'utf8', err => {
 		if (err) log.error('Failed to update checksum for database:', database.type);
 		cb();
 	});
-}
-
-// ============================================================================
-// Main Execution Flow
-// ============================================================================
+};
 
 if (!license_key) {
 	log.error('Missing license_key');

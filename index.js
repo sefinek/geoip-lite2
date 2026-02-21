@@ -1,24 +1,19 @@
-// ============================================================================
-// Dependencies
-// ============================================================================
-
 const { open, fstat, read, close, openSync, fstatSync, readSync, closeSync } = require('node:fs');
 const { join, resolve } = require('node:path');
 const { isIP } = require('node:net');
 const async = require('async');
-const { aton4, aton6, cmp6, ntoa4, ntoa6, cmp } = require('./utils.js');
+const { aton4, aton6, cmp6, removeNullTerminator, readIp6, createGeoData, populateGeoDataFromLocation } = require('./utils.js');
 const fsWatcher = require('./fsWatcher.js');
 const { version } = require('./package.json');
 
-// ============================================================================
-// Configuration
-// ============================================================================
-
 const watcherName = 'dataWatcher';
+const reportReloadError = err => {
+	if (err) console.error('[geoip-lite2] Failed to reload GeoIP data:', err);
+};
 
 const geoDataDir = resolve(
 	__dirname,
-	global.geoDataDir || process.env.GEODATADIR || './data/'
+	globalThis['geoDataDir'] || process.env.GEODATADIR || './data/'
 );
 
 const dataFiles = {
@@ -34,10 +29,6 @@ const privateRange4 = [
 	[aton4('172.16.0.0'), aton4('172.31.255.255')],
 	[aton4('192.168.0.0'), aton4('192.168.255.255')],
 ];
-
-// ============================================================================
-// Cache Configuration
-// ============================================================================
 
 const conf4 = {
 	firstIP: null,
@@ -63,27 +54,6 @@ let cache6 = { ...conf6 };
 const RECORD_SIZE = 10;
 const RECORD_SIZE6 = 34;
 
-// ============================================================================
-// Helper Functions
-// ============================================================================
-
-const removeNullTerminator = str => {
-	const nullIndex = str.indexOf('\0');
-	return nullIndex === -1 ? str : str.substring(0, nullIndex);
-};
-
-const readIp6 = (buffer, line, recordSize, offset) => {
-	const ipArray = [];
-	for (let i = 0; i < 4; i++) {
-		ipArray.push(buffer.readUInt32BE((line * recordSize) + (offset * 16) + (i * 4)));
-	}
-	return ipArray;
-};
-
-// ============================================================================
-// IPv4 Lookup Function
-// ============================================================================
-
 const lookup4 = ip => {
 	let fline = 0;
 	let cline = cache4.lastLine;
@@ -97,22 +67,8 @@ const lookup4 = ip => {
 	const recordSize = cache4.recordSize;
 	const locRecordSize = cache4.locationRecordSize;
 
-	const geoData = {
-		range: [null, null],
-		country: '',
-		region: '',
-		eu: '',
-		timezone: '',
-		city: '',
-		ll: [null, null],
-		metro: null,
-		area: null,
-	};
-
-	// Outside IPv4 range
+	const geoData = createGeoData();
 	if (ip > cache4.lastIP || ip < cache4.firstIP) return null;
-
-	// Private IP
 	for (let i = 0; i < privateRange.length; i++) {
 		if (ip >= privateRange[i][0] && ip <= privateRange[i][1]) return null;
 	}
@@ -130,20 +86,16 @@ const lookup4 = ip => {
 				geoData.country = buffer.toString('utf8', offset + 8, offset + 10);
 			} else {
 				locId = buffer.readUInt32BE(offset + 8);
-
-				// -1>>>0 is a marker for "No Location Info"
-				if (-1 >>> 0 > locId) {
-					const locOffset = locId * locRecordSize;
-					geoData.country = removeNullTerminator(locBuffer.toString('utf8', locOffset, locOffset + 2));
-					geoData.region = removeNullTerminator(locBuffer.toString('utf8', locOffset + 2, locOffset + 5));
-					geoData.metro = locBuffer.readInt32BE(locOffset + 5);
-					geoData.ll[0] = buffer.readInt32BE(offset + 12) / 10000; // latitude
-					geoData.ll[1] = buffer.readInt32BE(offset + 16) / 10000; // longitude
-					geoData.area = buffer.readUInt32BE(offset + 20);
-					geoData.eu = removeNullTerminator(locBuffer.toString('utf8', locOffset + 9, locOffset + 10));
-					geoData.timezone = removeNullTerminator(locBuffer.toString('utf8', locOffset + 10, locOffset + 42));
-					geoData.city = removeNullTerminator(locBuffer.toString('utf8', locOffset + 42, locOffset + locRecordSize));
-				}
+				populateGeoDataFromLocation({
+					geoData,
+					locationBuffer: locBuffer,
+					locationRecordSize: locRecordSize,
+					locationId: locId,
+					coordBuffer: buffer,
+					latitudeOffset: offset + 12,
+					longitudeOffset: offset + 16,
+					areaOffset: offset + 20,
+				});
 			}
 
 			return geoData;
@@ -163,27 +115,13 @@ const lookup4 = ip => {
 	}
 };
 
-// ============================================================================
-// IPv6 Lookup Function
-// ============================================================================
-
 const lookup6 = ip => {
 	const buffer = cache6.mainBuffer;
 	const recordSize = cache6.recordSize;
 	const locBuffer = cache4.locationBuffer;
 	const locRecordSize = cache4.locationRecordSize;
 
-	const geoData = {
-		range: [null, null],
-		country: '',
-		region: '',
-		eu: '',
-		timezone: '',
-		city: '',
-		ll: [null, null],
-		metro: null,
-		area: null,
-	};
+	const geoData = createGeoData();
 
 	let fline = 0;
 	let cline = cache6.lastLine;
@@ -204,22 +142,17 @@ const lookup6 = ip => {
 				geoData.country = removeNullTerminator(buffer.toString('utf8', offset + 32, offset + 34));
 			} else {
 				locId = buffer.readUInt32BE(offset + 32);
-
-				// -1>>>0 is a marker for "No Location Info"
-				if (-1 >>> 0 > locId) {
-					const locOffset = locId * locRecordSize;
-					geoData.country = removeNullTerminator(locBuffer.toString('utf8', locOffset, locOffset + 2));
-					geoData.region = removeNullTerminator(locBuffer.toString('utf8', locOffset + 2, locOffset + 5));
-					geoData.metro = locBuffer.readInt32BE(locOffset + 5);
-					geoData.ll[0] = buffer.readInt32BE(offset + 36) / 10000; // latitude
-					geoData.ll[1] = buffer.readInt32BE(offset + 40) / 10000; // longitude
-					geoData.area = buffer.readUInt32BE(offset + 44); // area
-					geoData.eu = removeNullTerminator(locBuffer.toString('utf8', locOffset + 9, locOffset + 10));
-					geoData.timezone = removeNullTerminator(locBuffer.toString('utf8', locOffset + 10, locOffset + 42));
-					geoData.city = removeNullTerminator(locBuffer.toString('utf8', locOffset + 42, locOffset + locRecordSize));
-				}
+				populateGeoDataFromLocation({
+					geoData,
+					locationBuffer: locBuffer,
+					locationRecordSize: locRecordSize,
+					locationId: locId,
+					coordBuffer: buffer,
+					latitudeOffset: offset + 36,
+					longitudeOffset: offset + 40,
+					areaOffset: offset + 44,
+				});
 			}
-			// We do not currently have detailed region/city info for IPv6, but finally have coords
 			return geoData;
 		} else if (fline === cline) {
 			return null;
@@ -237,10 +170,6 @@ const lookup6 = ip => {
 	}
 };
 
-// ============================================================================
-// IPv4-Mapped IPv6 Handler
-// ============================================================================
-
 const V6_PREFIX_1 = '0:0:0:0:0:FFFF:';
 const V6_PREFIX_2 = '::FFFF:';
 const get4mapped = ip => {
@@ -250,20 +179,14 @@ const get4mapped = ip => {
 	return null;
 };
 
-// ============================================================================
-// Data Loading Functions - IPv4
-// ============================================================================
-
-function preload(callback) {
+const preload = callback => {
 	let datFile;
 	let datSize;
 	const asyncCache = { ...conf4 };
-
-	// When the preload function receives a callback, do the task asynchronously
-	if (typeof arguments[0] === 'function') {
-		async.series([
+	if (typeof callback === 'function') {
+		void async.series([
 			cb => {
-				async.series([
+				void async.series([
 					cb2 => {
 						open(dataFiles.cityNames, 'r', (err, file) => {
 							datFile = file;
@@ -298,7 +221,8 @@ function preload(callback) {
 				], err => {
 					if (err) {
 						if (err.code !== 'ENOENT' && err.code !== 'EBADF') {
-							throw err;
+							cb(err);
+							return;
 						}
 
 						open(dataFiles.country, 'r', (err, file) => {
@@ -322,7 +246,7 @@ function preload(callback) {
 			}, () => {
 				asyncCache.mainBuffer = Buffer.alloc(datSize);
 
-				async.series([
+				void async.series([
 					cb2 => {
 						read(datFile, asyncCache.mainBuffer, 0, datSize, 0, cb2);
 					},
@@ -345,19 +269,20 @@ function preload(callback) {
 			datFile = openSync(dataFiles.cityNames, 'r');
 			datSize = fstatSync(datFile).size;
 			if (datSize === 0) {
-				const err = new Error('Empty file');
-				err.code = 'EMPTY_FILE';
-				throw err;
+				closeSync(datFile);
+				datFile = openSync(dataFiles.country, 'r');
+				datSize = fstatSync(datFile).size;
+				cache4.recordSize = RECORD_SIZE;
+			} else {
+				cache4.locationBuffer = Buffer.alloc(datSize);
+				readSync(datFile, cache4.locationBuffer, 0, datSize, 0);
+				closeSync(datFile);
+
+				datFile = openSync(dataFiles.city, 'r');
+				datSize = fstatSync(datFile).size;
 			}
-
-			cache4.locationBuffer = Buffer.alloc(datSize);
-			readSync(datFile, cache4.locationBuffer, 0, datSize, 0);
-			closeSync(datFile);
-
-			datFile = openSync(dataFiles.city, 'r');
-			datSize = fstatSync(datFile).size;
 		} catch (err) {
-			if (err.code !== 'ENOENT' && err.code !== 'EBADF' && err.code !== 'EMPTY_FILE') {
+			if (err.code !== 'ENOENT' && err.code !== 'EBADF') {
 				throw err;
 			}
 
@@ -374,22 +299,16 @@ function preload(callback) {
 		cache4.lastIP = cache4.mainBuffer.readUInt32BE((cache4.lastLine * cache4.recordSize) + 4);
 		cache4.firstIP = cache4.mainBuffer.readUInt32BE(0);
 	}
-}
+};
 
-// ============================================================================
-// Data Loading Functions - IPv6
-// ============================================================================
-
-function preload6(callback) {
+const preload6 = callback => {
 	let datFile;
 	let datSize;
 	const asyncCache6 = { ...conf6 };
-
-	// When the preload function receives a callback, do the task asynchronously
-	if (typeof arguments[0] === 'function') {
-		async.series([
+	if (typeof callback === 'function') {
+		void async.series([
 			cb => {
-				async.series([
+				void async.series([
 					cb2 => {
 						open(dataFiles.city6, 'r', (err, file) => {
 							datFile = file;
@@ -405,7 +324,8 @@ function preload6(callback) {
 				], err => {
 					if (err) {
 						if (err.code !== 'ENOENT' && err.code !== 'EBADF') {
-							throw err;
+							cb(err);
+							return;
 						}
 
 						open(dataFiles.country6, 'r', (err, file) => {
@@ -428,7 +348,7 @@ function preload6(callback) {
 			}, () => {
 				asyncCache6.mainBuffer = Buffer.alloc(datSize);
 
-				async.series([
+				void async.series([
 					cb2 => {
 						read(datFile, asyncCache6.mainBuffer, 0, datSize, 0, cb2);
 					},
@@ -452,12 +372,13 @@ function preload6(callback) {
 			datSize = fstatSync(datFile).size;
 
 			if (datSize === 0) {
-				const err = new Error('Empty file');
-				err.code = 'EMPTY_FILE';
-				throw err;
+				closeSync(datFile);
+				datFile = openSync(dataFiles.country6, 'r');
+				datSize = fstatSync(datFile).size;
+				cache6.recordSize = RECORD_SIZE6;
 			}
 		} catch (err) {
-			if (err.code !== 'ENOENT' && err.code !== 'EBADF' && err.code !== 'EMPTY_FILE') {
+			if (err.code !== 'ENOENT' && err.code !== 'EBADF') {
 				throw err;
 			}
 
@@ -474,23 +395,31 @@ function preload6(callback) {
 		cache6.lastIP = readIp6(cache6.mainBuffer, cache6.lastLine, cache6.recordSize, 1);
 		cache6.firstIP = readIp6(cache6.mainBuffer, 0, cache6.recordSize, 0);
 	}
-}
+};
 
-// ============================================================================
-// Public API
-// ============================================================================
+const runAsyncReload = callback => {
+	void async.series([
+		cb => {
+			preload(cb);
+		},
+		cb => {
+			preload6(cb);
+		},
+	], callback);
+};
 
 module.exports = {
-	cmp,
-
 	lookup: ip => {
 		if (!ip) {
 			return null;
 		} else if (typeof ip === 'number') {
 			return lookup4(ip);
-		} else if (isIP(ip) === 4) {
+		}
+
+		const ipVersion = isIP(ip);
+		if (ipVersion === 4) {
 			return lookup4(aton4(ip));
-		} else if (isIP(ip) === 6) {
+		} else if (ipVersion === 6) {
 			const ipv4 = get4mapped(ip);
 			if (ipv4) {
 				return lookup4(aton4(ipv4));
@@ -501,77 +430,32 @@ module.exports = {
 
 		return null;
 	},
-
-	pretty: n => {
-		if (typeof n === 'string') {
-			return n;
-		} else if (typeof n === 'number') {
-			return ntoa4(n);
-		} else if (Array.isArray(n)) {
-			return ntoa6(n);
-		}
-
-		return n;
-	},
-
-	// Start watching for data updates. The watcher waits one minute for file transfer to
-	// complete before triggering the callback.
 	startWatchingDataUpdate: callback => {
 		fsWatcher.makeFsWatchFilter(watcherName, geoDataDir, 60 * 1000, () => {
-			const tasks = [
-				cb => {
-					preload(cb);
-				}, cb => {
-					preload6(cb);
-				},
-			];
-
 			if (typeof callback === 'function') {
-				async.series(tasks, callback);
+				runAsyncReload(callback);
 			} else {
-				async.series(tasks);
+				runAsyncReload(reportReloadError);
 			}
 		});
 	},
-
-	// Stop watching for data updates.
 	stopWatchingDataUpdate: () => fsWatcher.stopWatching(watcherName),
-
-	// Clear data
 	clear: () => {
 		cache4 = { ...conf4 };
 		cache6 = { ...conf6 };
 	},
-
-	// Reload data synchronously
 	reloadDataSync: () => {
 		preload();
 		preload6();
 	},
-
-	// Reload data asynchronously
 	reloadData: callback => {
 		if (typeof callback === 'function') {
-			async.series([
-				cb => {
-					preload(cb);
-				},
-				cb => {
-					preload6(cb);
-				},
-			], callback);
+			runAsyncReload(callback);
 			return;
 		}
 
 		return new Promise((resolve, reject) => {
-			async.series([
-				cb => {
-					preload(cb);
-				},
-				cb => {
-					preload6(cb);
-				},
-			], err => {
+			runAsyncReload(err => {
 				if (err) reject(err);
 				else resolve();
 			});
@@ -581,12 +465,6 @@ module.exports = {
 	version,
 };
 
-// ============================================================================
-// Initialize - Load data on module startup
-// ============================================================================
-
 preload();
 preload6();
 
-// lookup4 = gen_lookup('geoip-country.dat', 4);
-// lookup6 = gen_lookup('geoip-country6.dat', 16);

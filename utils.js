@@ -1,12 +1,4 @@
-// ============================================================================
-// Utility Functions for IP Address Conversion and Comparison
-// ============================================================================
-
 const utils = module.exports = {};
-
-// ============================================================================
-// IPv4 Conversion Functions
-// ============================================================================
 
 utils.aton4 = a => {
 	const parts = a.split('.');
@@ -16,10 +8,6 @@ utils.aton4 = a => {
 utils.ntoa4 = n => {
 	return ((n >>> 24) & 0xff) + '.' + ((n >>> 16) & 0xff) + '.' + ((n >>> 8) & 0xff) + '.' + (n & 0xff);
 };
-
-// ============================================================================
-// IPv6 Conversion Functions
-// ============================================================================
 
 utils.aton6 = a => {
 	a = a.replace(/"/g, '');
@@ -62,10 +50,6 @@ utils.ntoa6 = n => {
 	return a;
 };
 
-// ============================================================================
-// Comparison Functions
-// ============================================================================
-
 utils.cmp = (a, b) => {
 	if (typeof a === 'number' && typeof b === 'number') return (a < b ? -1 : (a > b ? 1 : 0));
 	if (a instanceof Array && b instanceof Array) return utils.cmp6(a, b);
@@ -83,3 +67,55 @@ utils.cmp6 = (a, b) => {
 
 	return 0;
 };
+
+const NO_LOCATION_INFO = -1 >>> 0;
+
+utils.removeNullTerminator = str => {
+	const nullIndex = str.indexOf('\0');
+	return nullIndex === -1 ? str : str.substring(0, nullIndex);
+};
+
+utils.readIp6 = (buffer, line, recordSize, offset) => {
+	const ipArray = [];
+	for (let i = 0; i < 4; i++) {
+		ipArray.push(buffer.readUInt32BE((line * recordSize) + (offset * 16) + (i * 4)));
+	}
+	return ipArray;
+};
+
+utils.createGeoData = () => ({
+	range: [null, null],
+	country: '',
+	region: '',
+	eu: '',
+	timezone: '',
+	city: '',
+	ll: [null, null],
+	metro: null,
+	area: null,
+});
+
+utils.populateGeoDataFromLocation = ({
+	geoData,
+	locationBuffer,
+	locationRecordSize,
+	locationId,
+	coordBuffer,
+	latitudeOffset,
+	longitudeOffset,
+	areaOffset,
+}) => {
+	if (locationId >= NO_LOCATION_INFO) return;
+
+	const locOffset = locationId * locationRecordSize;
+	geoData.country = utils.removeNullTerminator(locationBuffer.toString('utf8', locOffset, locOffset + 2));
+	geoData.region = utils.removeNullTerminator(locationBuffer.toString('utf8', locOffset + 2, locOffset + 5));
+	geoData.metro = locationBuffer.readInt32BE(locOffset + 5);
+	geoData.ll[0] = coordBuffer.readInt32BE(latitudeOffset) / 10000;
+	geoData.ll[1] = coordBuffer.readInt32BE(longitudeOffset) / 10000;
+	geoData.area = coordBuffer.readUInt32BE(areaOffset);
+	geoData.eu = utils.removeNullTerminator(locationBuffer.toString('utf8', locOffset + 9, locOffset + 10));
+	geoData.timezone = utils.removeNullTerminator(locationBuffer.toString('utf8', locOffset + 10, locOffset + 42));
+	geoData.city = utils.removeNullTerminator(locationBuffer.toString('utf8', locOffset + 42, locOffset + locationRecordSize));
+};
+
