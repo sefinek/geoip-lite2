@@ -169,7 +169,7 @@ describe('GeoIP2', () => {
 			const none6 = geoIp.lookup('::ffff:173.185.182.82');
 			expect(none6).toBeNull();
 
-			geoIp.reloadData(() => {
+			const result = geoIp.reloadData(() => {
 				const after4 = geoIp.lookup('75.82.117.180');
 				expect(before4).toEqual(after4);
 				const after6 = geoIp.lookup('::ffff:173.185.182.82');
@@ -177,6 +177,37 @@ describe('GeoIP2', () => {
 
 				done();
 			});
+
+			expect(result).toBeUndefined();
+		});
+
+		it('should reload data and resolve a promise when callback is omitted', async () => {
+			const before4 = geoIp.lookup('75.82.117.180');
+			expect(before4).not.toBeNull();
+			const before6 = geoIp.lookup('::ffff:173.185.182.82');
+			expect(before6).not.toBeNull();
+
+			geoIp.clear();
+
+			expect(geoIp.lookup('75.82.117.180')).toBeNull();
+			expect(geoIp.lookup('::ffff:173.185.182.82')).toBeNull();
+
+			const result = geoIp.reloadData();
+			expect(result).toBeDefined();
+			expect(typeof result.then).toBe('function');
+
+			await result;
+
+			const after4 = geoIp.lookup('75.82.117.180');
+			expect(before4).toEqual(after4);
+			const after6 = geoIp.lookup('::ffff:173.185.182.82');
+			expect(before6).toEqual(after6);
+		});
+	});
+
+	describe('#testWatcherLifecycle', () => {
+		it('should not throw when stopping watcher before it starts', () => {
+			expect(() => geoIp.stopWatchingDataUpdate()).not.toThrow();
 		});
 	});
 

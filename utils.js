@@ -22,34 +22,29 @@ utils.ntoa4 = n => {
 // ============================================================================
 
 utils.aton6 = a => {
-	a = a.replace(/"/g, '').split(':');
+	a = a.replace(/"/g, '');
 
-	const l = a.length - 1;
-	let i;
+	let parts;
+	const omitStart = a.indexOf('::');
+	if (omitStart >= 0) {
+		const left = a.slice(0, omitStart);
+		const right = a.slice(omitStart + 2);
+		const leftParts = left ? left.split(':') : [];
+		const rightParts = right ? right.split(':') : [];
+		const omitted = 8 - leftParts.length - rightParts.length;
 
-	if (a[l] === '') {
-		a[l] = 0;
+		parts = leftParts.concat(new Array(Math.max(omitted, 0)).fill('0'), rightParts);
+	} else {
+		parts = a.split(':');
 	}
 
-	if (l < 7) {
-		a.length = 8;
-
-		for (i = l; i >= 0 && a[i] !== ''; i--) {
-			a[7 - l + i] = a[i];
-		}
-	}
-
-	for (i = 0; i < 8; i++) {
-		if (!a[i]) {
-			a[i] = 0;
-		} else {
-			a[i] = parseInt(a[i], 16);
-		}
+	for (let i = 0; i < 8; i++) {
+		parts[i] = parseInt(parts[i] || '0', 16);
 	}
 
 	const r = [];
-	for (i = 0; i < 4; i++) {
-		r.push(((a[2 * i] << 16) + a[2 * i + 1]) >>> 0);
+	for (let i = 0; i < 4; i++) {
+		r.push(((parts[2 * i] << 16) + parts[(2 * i) + 1]) >>> 0);
 	}
 
 	return r;
@@ -79,25 +74,12 @@ utils.cmp = (a, b) => {
 };
 
 utils.cmp6 = (a, b) => {
-	for (let ii = 0; ii < 2; ii++) {
-		if (a[ii] < b[ii]) return -1;
-		if (a[ii] > b[ii]) return 1;
+	for (let ii = 0; ii < 4; ii++) {
+		const av = a[ii] ?? 0;
+		const bv = b[ii] ?? 0;
+		if (av < bv) return -1;
+		if (av > bv) return 1;
 	}
 
 	return 0;
-};
-
-// ============================================================================
-// IP Address Validation
-// ============================================================================
-
-utils.isPrivateIP = addr => {
-	const str = addr.toString();
-	return str.startsWith('10.') ||
-		str.startsWith('192.168.') ||
-		str.startsWith('172.16.') ||
-		str.startsWith('127.') ||
-		str.startsWith('169.254.') ||
-		str.startsWith('fc00:') ||
-		str.startsWith('fe80:');
 };

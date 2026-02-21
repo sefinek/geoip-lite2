@@ -13,8 +13,9 @@ interface GeoIp2Location {
 export function lookup(ip: string | number): GeoIp2Location | null;
 export function pretty(n: string | number | any[]): string;
 export function reloadDataSync(): void;
-export function reloadData(callback?: (err?: Error | null) => void): Promise<void>;
-export function startWatchingDataUpdate(callback: () => void): void;
+export function reloadData(callback: (err?: Error | null) => void): void;
+export function reloadData(): Promise<void>;
+export function startWatchingDataUpdate(callback?: (err?: Error | null) => void): void;
 export function stopWatchingDataUpdate(): void;
 export function clear(): void;
 export const version: string;

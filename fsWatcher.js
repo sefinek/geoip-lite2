@@ -14,7 +14,13 @@ const FSWatcher = {};
  * Takes an FSWatcher object and closes it.
  * @param {string} name - The name of the watcher to close.
  */
-const stopWatching = name => FSWatcher[name].close();
+const stopWatching = name => {
+	const watcher = FSWatcher[name];
+	if (!watcher) return;
+
+	watcher.close();
+	delete FSWatcher[name];
+};
 
 // ============================================================================
 // File System Watch with Debounce

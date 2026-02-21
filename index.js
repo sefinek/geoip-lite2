@@ -74,7 +74,7 @@ const removeNullTerminator = str => {
 
 const readIp6 = (buffer, line, recordSize, offset) => {
 	const ipArray = [];
-	for (let i = 0; i < 2; i++) {
+	for (let i = 0; i < 4; i++) {
 		ipArray.push(buffer.readUInt32BE((line * recordSize) + (offset * 16) + (i * 4)));
 	}
 	return ipArray;
@@ -87,8 +87,8 @@ const readIp6 = (buffer, line, recordSize, offset) => {
 const lookup4 = ip => {
 	let fline = 0;
 	let cline = cache4.lastLine;
-	let floor = cache4.lastIP;
-	let ceil = cache4.firstIP;
+	let floor;
+	let ceil;
 	let line, locId;
 
 	const buffer = cache4.mainBuffer;
@@ -187,8 +187,8 @@ const lookup6 = ip => {
 
 	let fline = 0;
 	let cline = cache6.lastLine;
-	let floor = cache6.lastIP;
-	let ceil = cache6.firstIP;
+	let floor;
+	let ceil;
 	let line, locId;
 
 	if (cmp6(ip, cache6.lastIP) > 0 || cmp6(ip, cache6.firstIP) < 0) return null;
@@ -518,14 +518,19 @@ module.exports = {
 	// complete before triggering the callback.
 	startWatchingDataUpdate: callback => {
 		fsWatcher.makeFsWatchFilter(watcherName, geoDataDir, 60 * 1000, () => {
-			// Reload data
-			async.series([
+			const tasks = [
 				cb => {
 					preload(cb);
 				}, cb => {
 					preload6(cb);
 				},
-			], callback);
+			];
+
+			if (typeof callback === 'function') {
+				async.series(tasks, callback);
+			} else {
+				async.series(tasks);
+			}
 		});
 	},
 
@@ -546,15 +551,31 @@ module.exports = {
 
 	// Reload data asynchronously
 	reloadData: callback => {
-		// Reload data
-		async.series([
-			cb => {
-				preload(cb);
-			},
-			cb => {
-				preload6(cb);
-			},
-		], callback);
+		if (typeof callback === 'function') {
+			async.series([
+				cb => {
+					preload(cb);
+				},
+				cb => {
+					preload6(cb);
+				},
+			], callback);
+			return;
+		}
+
+		return new Promise((resolve, reject) => {
+			async.series([
+				cb => {
+					preload(cb);
+				},
+				cb => {
+					preload6(cb);
+				},
+			], err => {
+				if (err) reject(err);
+				else resolve();
+			});
+		});
 	},
 
 	version,

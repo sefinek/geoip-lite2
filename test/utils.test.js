@@ -65,6 +65,18 @@ describe('Utility Functions', () => {
 			expect(result).toBeInstanceOf(Array);
 			expect(result.length).toBe(4);
 		});
+
+		it('should return identical output for equivalent compressed and full IPv6 forms', () => {
+			const compressed = utils.aton6('2607:f0d0:1002:51::4');
+			const expanded = utils.aton6('2607:f0d0:1002:0051:0000:0000:0000:0004');
+			expect(compressed).toEqual(expanded);
+		});
+
+		it('should correctly expand omitted middle zero groups', () => {
+			const actual = utils.aton6('2001:db8:1::2');
+			const expected = utils.aton6('2001:0db8:0001:0000:0000:0000:0000:0002');
+			expect(actual).toEqual(expected);
+		});
 	});
 
 	describe('#ntoa6', () => {
@@ -94,7 +106,7 @@ describe('Utility Functions', () => {
 		});
 
 		it('should delegate to cmp6 for arrays', () => {
-			const result = utils.cmp([1, 2], [1, 3]);
+			const result = utils.cmp([0, 0, 0, 1], [0, 0, 0, 2]);
 			expect(result).toBe(-1);
 		});
 
@@ -106,44 +118,24 @@ describe('Utility Functions', () => {
 
 	describe('#cmp6', () => {
 		it('should compare IPv6 arrays correctly', () => {
-			expect(utils.cmp6([0, 0], [0, 1])).toBe(-1);
-			expect(utils.cmp6([0, 1], [0, 0])).toBe(1);
-			expect(utils.cmp6([5, 10], [5, 10])).toBe(0);
+			expect(utils.cmp6([0, 0, 0, 0], [0, 0, 0, 1])).toBe(-1);
+			expect(utils.cmp6([0, 0, 0, 1], [0, 0, 0, 0])).toBe(1);
+			expect(utils.cmp6([5, 10, 15, 20], [5, 10, 15, 20])).toBe(0);
 		});
 
 		it('should compare first element priority', () => {
-			expect(utils.cmp6([1, 100], [2, 0])).toBe(-1);
-			expect(utils.cmp6([2, 0], [1, 100])).toBe(1);
+			expect(utils.cmp6([1, 100, 999, 999], [2, 0, 0, 0])).toBe(-1);
+			expect(utils.cmp6([2, 0, 0, 0], [1, 100, 999, 999])).toBe(1);
 		});
 
 		it('should handle equal first elements', () => {
-			expect(utils.cmp6([1, 2], [1, 3])).toBe(-1);
-			expect(utils.cmp6([1, 3], [1, 2])).toBe(1);
-		});
-	});
-
-	describe('#isPrivateIP', () => {
-		it('should detect private IPv4 addresses', () => {
-			expect(utils.isPrivateIP('10.0.0.1')).toBe(true);
-			expect(utils.isPrivateIP('10.255.255.255')).toBe(true);
-			expect(utils.isPrivateIP('192.168.0.1')).toBe(true);
-			expect(utils.isPrivateIP('192.168.255.255')).toBe(true);
-			expect(utils.isPrivateIP('172.16.0.1')).toBe(true);
-			expect(utils.isPrivateIP('127.0.0.1')).toBe(true);
-			expect(utils.isPrivateIP('169.254.1.1')).toBe(true);
+			expect(utils.cmp6([1, 2, 0, 0], [1, 3, 0, 0])).toBe(-1);
+			expect(utils.cmp6([1, 3, 0, 0], [1, 2, 0, 0])).toBe(1);
 		});
 
-		it('should detect private IPv6 addresses', () => {
-			expect(utils.isPrivateIP('fc00::1')).toBe(true);
-			expect(utils.isPrivateIP('fe80::1')).toBe(true);
-		});
-
-		it('should not detect public IP addresses as private', () => {
-			expect(utils.isPrivateIP('8.8.8.8')).toBe(false);
-			expect(utils.isPrivateIP('1.1.1.1')).toBe(false);
-			expect(utils.isPrivateIP('172.15.0.1')).toBe(false);
-			expect(utils.isPrivateIP('172.32.0.1')).toBe(false);
-			expect(utils.isPrivateIP('2001:db8::1')).toBe(false);
+		it('should compare lower 64 bits when upper 64 bits are equal', () => {
+			expect(utils.cmp6([638054608, 268566609, 0, 4], [638054608, 268566609, 0, 5])).toBe(-1);
+			expect(utils.cmp6([638054608, 268566609, 4, 4], [638054608, 268566609, 0, 4])).toBe(1);
 		});
 	});
 });
