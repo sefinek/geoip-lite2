@@ -16,7 +16,7 @@
 
 
 # 🚀 Improved GeoIP Module by [Sefinek](https://sefinek.net)
-A maintained and optimized fork of [geoip-lite](https://github.com/geoip-lite/node-geoip) originally created by [Philip Tellis](AUTHORS).
+Actively maintained and optimized fork of [geoip-lite](https://github.com/geoip-lite/node-geoip), originally created by [Philip Tellis](AUTHORS).
 Fully native JS implementation with synchronous, in-memory lookups for IPv4 and IPv6.
 Includes automated test coverage using [Jest](https://www.npmjs.com/package/jest).
 
@@ -66,7 +66,7 @@ console.log(geoIp.lookup(ip));
 
 ## 🌐 Live Demo API
 You can see this module in action using my [official API](https://api.sefinek.net).
-- Specific IP: https://api.sefinek.net/api/v2/geoip/109.207.159.255 (should not be used in production)
+- Specific IP: https://api.sefinek.net/api/v2/geoip/109.207.159.255 (not for production use)
 - Client's IP: https://api.sefinek.net/api/v2/geoip/me
 - Documentation: https://api.sefinek.net/docs/v2
 

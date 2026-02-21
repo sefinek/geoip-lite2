@@ -1,45 +1,24 @@
 {
   "name": "geoip-lite2",
   "version": "2.3.0-alpha.0",
-  "description": "A light weight native JavaScript implementation of GeoIP API from MaxMind. Improved and faster version by Sefinek.",
+  "description": "Fast, native implementation of the GeoIP API from MaxMind in JavaScript. An improved version by Sefinek, continuously maintained.",
   "keywords": [
-    "city",
-    "country",
-    "fast-geoip",
-    "fast-geolocation",
-    "geo-ip",
-    "geo-location-api",
-    "geo",
-    "geoip-api",
-    "geoip-data",
-    "geoip-database",
     "geoip",
-    "geoip2-lite",
-    "geoip2-lite2",
     "geoip2",
-    "geolite",
-    "geolite2",
     "geolocation",
-    "geolookup",
-    "global-ip-data",
-    "ip-analytics",
-    "ip-geo",
-    "ip-geolocation",
-    "ip-georesolution",
-    "ip-location",
-    "ip-lookup",
-    "ip-mapping",
-    "ip-resolver",
-    "ip-tracking",
     "ip",
+    "ip-lookup",
+    "ip-geolocation",
     "ipv4",
     "ipv6",
-    "location",
-    "maxmind-integration",
-    "maxmind-lite",
     "maxmind",
+    "geolite2",
+    "geolite",
+    "country",
+    "city",
     "region",
-    "state"
+    "nodejs",
+    "javascript"
   ],
   "homepage": "https://github.com/sefinek/geoip-lite2#readme",
   "bugs": {
@@ -49,9 +28,18 @@
     "type": "git",
     "url": "git+https://github.com/sefinek/geoip-lite2.git"
   },
-  "license": "Apache-2.0",
-  "author": "Philip Tellis <philip@bluesmoon.info> (https://bluesmoon.info)",
+  "license": "(Apache-2.0 AND CC-BY-SA-4.0)",
+  "author": "Sefinek <contact@sefinek.net> (https://sefinek.net)",
+  "contributors": [
+    "Philip Tellis <philip@bluesmoon.info> (https://bluesmoon.info)"
+  ],
   "type": "commonjs",
+  "exports": {
+    ".": {
+      "require": "./index.js",
+      "types": "./index.d.ts"
+    }
+  },
   "main": "index.js",
   "types": "index.d.ts",
   "directories": {
@@ -91,6 +79,6 @@
     "jest": "^30.2.0"
   },
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=18.0.0"
   }
 }
