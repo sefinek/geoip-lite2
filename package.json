@@ -49,14 +49,14 @@
     "data",
     "tools",
     "AUTHORS",
-    "fsWatcher.js",
+    "scripts",
     "index.d.ts",
     "index.js",
     "LICENSE",
-    "README.md",
-    "utils.js"
+    "README.md"
   ],
   "scripts": {
+    "example": "node test/example.js",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "m": "ncu -u && npm install && npm update",

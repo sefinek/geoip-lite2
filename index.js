@@ -2,8 +2,8 @@ const { open, fstat, read, close, openSync, fstatSync, readSync, closeSync } = r
 const { join, resolve } = require('node:path');
 const { isIP } = require('node:net');
 const async = require('async');
-const { aton4, aton6, cmp6, removeNullTerminator, readIp6, createGeoData, populateGeoDataFromLocation } = require('./utils.js');
-const fsWatcher = require('./fsWatcher.js');
+const { aton4, aton6, cmp6, removeNullTerminator, readIp6, createGeoData, populateGeoDataFromLocation } = require('./scripts/utils.js');
+const fsWatcher = require('./scripts/fsWatcher.js');
 const { version } = require('./package.json');
 
 const watcherName = 'dataWatcher';
@@ -410,11 +410,8 @@ const runAsyncReload = callback => {
 
 module.exports = {
 	lookup: ip => {
-		if (!ip) {
-			return null;
-		} else if (typeof ip === 'number') {
-			return lookup4(ip);
-		}
+		if (ip === undefined || ip === null) throw new TypeError('lookup(ip) requires an IP address');
+		if (typeof ip === 'number') return lookup4(ip);
 
 		const ipVersion = isIP(ip);
 		if (ipVersion === 4) {

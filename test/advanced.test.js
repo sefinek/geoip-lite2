@@ -192,8 +192,11 @@ describe('Advanced geoIp Tests', () => {
 
 	describe('#EdgeCases', () => {
 		it('should handle undefined input', () => {
-			const result = geoIp.lookup(undefined);
-			expect(result).toBeNull();
+			expect(() => geoIp.lookup(undefined)).toThrow(TypeError);
+		});
+
+		it('should throw when input is missing', () => {
+			expect(() => geoIp.lookup()).toThrow(TypeError);
 		});
 
 		it('should handle boolean input', () => {

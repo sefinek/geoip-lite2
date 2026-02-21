@@ -122,15 +122,17 @@ describe('Performance Tests', () => {
 			expect(successCount).toBe(iterations);
 		});
 
-		it('should handle invalid inputs without throwing', () => {
-			const invalidInputs = [
-				null, undefined, '', 'invalid', {}, [], true, false, -1,
-			];
+		it('should handle invalid inputs consistently', () => {
+			const throwInputs = [null, undefined];
+			const nullInputs = ['', 'invalid', {}, [], true, false, -1];
 
 			for (let i = 0; i < 1000; i++) {
-				invalidInputs.forEach(input => {
+				for (const input of throwInputs) {
+					expect(() => geoIp.lookup(input)).toThrow(TypeError);
+				}
+				for (const input of nullInputs) {
 					expect(geoIp.lookup(input)).toBeNull();
-				});
+				}
 			}
 		});
 	});

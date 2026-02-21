@@ -84,6 +84,8 @@ pass it to the `lookup` method. Remember to remove any `[` and `]` around an IPv
 const geo = geoIp.lookup(ip);
 ```
 
+If `ip` is missing (`undefined` or `null`), `lookup` throws a `TypeError`.
+
 If the IP address was found, the `lookup` method returns an object with the following structure:
 
 ```js

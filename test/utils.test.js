@@ -1,5 +1,5 @@
 const { describe, expect, it } = require('@jest/globals');
-const utils = require('../utils.js');
+const utils = require('../scripts/utils.js');
 
 describe('Utility Functions', () => {
 	describe('#aton4', () => {

@@ -227,9 +227,8 @@ describe('GeoIP2', () => {
 	});
 
 	describe('#testNullIP', () => {
-		it('should return null for a null IP address', () => {
-			const actual = geoIp.lookup(null);
-			expect(actual).toBeNull();
+		it('should throw for a null IP address', () => {
+			expect(() => geoIp.lookup(null)).toThrow(TypeError);
 		});
 	});
 
