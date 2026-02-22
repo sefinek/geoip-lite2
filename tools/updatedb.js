@@ -73,7 +73,7 @@ const databases = [{
 
 const mkdir = dirName => {
 	const dir = path.dirname(dirName);
-	if (!fs.existsSync(dir)) fs.mkdirSync(dir);
+	fs.mkdirSync(dir, { recursive: true });
 };
 
 const tryFixingLine = line => {
@@ -307,19 +307,38 @@ const fetch = (database, cb) => {
 			process.exit(1);
 		}
 
-		let tmpFilePipe;
-		const tmpFileStream = fs.createWriteStream(tmpFile);
+		let settled = false;
+		const finish = err => {
+			if (settled) return;
+			settled = true;
 
-		if (gzip) {
-			tmpFilePipe = response.pipe(zlib.createGunzip()).pipe(tmpFileStream);
-		} else {
-			tmpFilePipe = response.pipe(tmpFileStream);
-		}
+			if (err) {
+				fs.unlink(tmpFile, unlinkErr => {
+					if (unlinkErr && unlinkErr.code !== 'ENOENT') {
+						log.warn('Failed to remove incomplete download:', unlinkErr.message);
+					}
+					cb(err);
+				});
+				return;
+			}
 
-		tmpFilePipe.on('close', () => {
 			log.info(`Retrieved ${fileName}`);
 			cb(null, tmpFile, fileName, database);
-		});
+		};
+
+		const tmpFileStream = fs.createWriteStream(tmpFile);
+		tmpFileStream.on('error', finish);
+		response.on('error', finish);
+
+		if (gzip) {
+			const gunzipStream = zlib.createGunzip();
+			gunzipStream.on('error', finish);
+			response.pipe(gunzipStream).pipe(tmpFileStream);
+		} else {
+			response.pipe(tmpFileStream);
+		}
+
+		tmpFileStream.on('close', () => finish());
 	});
 };
 

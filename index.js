@@ -1,5 +1,5 @@
 const { open, fstat, read, close, openSync, fstatSync, readSync, closeSync } = require('node:fs');
-const { join, resolve } = require('node:path');
+const { basename, join, resolve } = require('node:path');
 const { isIP } = require('node:net');
 const async = require('async');
 const { aton4, aton6, cmp6, removeNullTerminator, readIp6, createGeoData, populateGeoDataFromLocation } = require('./scripts/utils.js');
@@ -23,6 +23,7 @@ const dataFiles = {
 	country: join(geoDataDir, 'geoip-country.dat'),
 	country6: join(geoDataDir, 'geoip-country6.dat'),
 };
+const watchedDataFiles = Object.values(dataFiles).map(filePath => basename(filePath));
 
 const privateRange4 = [
 	[aton4('10.0.0.0'), aton4('10.255.255.255')],
@@ -195,9 +196,13 @@ const preload = callback => {
 					},
 					cb2 => {
 						fstat(datFile, (err, stats) => {
+							if (err) {
+								cb2(err);
+								return;
+							}
 							datSize = stats.size;
 							asyncCache.locationBuffer = Buffer.alloc(datSize);
-							cb2(err);
+							cb2();
 						});
 					},
 					cb2 => {
@@ -214,8 +219,12 @@ const preload = callback => {
 					},
 					cb2 => {
 						fstat(datFile, (err, stats) => {
+							if (err) {
+								cb2(err);
+								return;
+							}
 							datSize = stats.size;
-							cb2(err);
+							cb2();
 						});
 					},
 				], err => {
@@ -231,6 +240,10 @@ const preload = callback => {
 							} else {
 								datFile = file;
 								fstat(datFile, (err, stats) => {
+									if (err) {
+										cb(err);
+										return;
+									}
 									datSize = stats.size;
 									asyncCache.recordSize = RECORD_SIZE;
 
@@ -243,7 +256,8 @@ const preload = callback => {
 						cb();
 					}
 				});
-			}, () => {
+			},
+			cb => {
 				asyncCache.mainBuffer = Buffer.alloc(datSize);
 
 				void async.series([
@@ -260,10 +274,10 @@ const preload = callback => {
 						asyncCache.firstIP = asyncCache.mainBuffer.readUInt32BE(0);
 						cache4 = asyncCache;
 					}
-					callback(err);
+					cb(err);
 				});
 			},
-		]);
+		], callback);
 	} else {
 		try {
 			datFile = openSync(dataFiles.cityNames, 'r');
@@ -317,8 +331,12 @@ const preload6 = callback => {
 					},
 					cb2 => {
 						fstat(datFile, (err, stats) => {
+							if (err) {
+								cb2(err);
+								return;
+							}
 							datSize = stats.size;
-							cb2(err);
+							cb2();
 						});
 					},
 				], err => {
@@ -334,6 +352,10 @@ const preload6 = callback => {
 							} else {
 								datFile = file;
 								fstat(datFile, (err, stats) => {
+									if (err) {
+										cb(err);
+										return;
+									}
 									datSize = stats.size;
 									asyncCache6.recordSize = RECORD_SIZE6;
 
@@ -345,7 +367,8 @@ const preload6 = callback => {
 						cb();
 					}
 				});
-			}, () => {
+			},
+			cb => {
 				asyncCache6.mainBuffer = Buffer.alloc(datSize);
 
 				void async.series([
@@ -362,10 +385,10 @@ const preload6 = callback => {
 						asyncCache6.firstIP = readIp6(asyncCache6.mainBuffer, 0, asyncCache6.recordSize, 0);
 						cache6 = asyncCache6;
 					}
-					callback(err);
+					cb(err);
 				});
 			},
-		]);
+		], callback);
 	} else {
 		try {
 			datFile = openSync(dataFiles.city6, 'r');
@@ -428,7 +451,13 @@ module.exports = {
 		return null;
 	},
 	startWatchingDataUpdate: callback => {
-		fsWatcher.makeFsWatchFilter(watcherName, geoDataDir, 60 * 1000, () => {
+		fsWatcher.makeFsWatchFilter(watcherName, geoDataDir, watchedDataFiles, 60 * 1000, change => {
+			if (change?.file) {
+				console.log(`[geoip-lite2] Detected change in "${change.file}", reloading data...`);
+			} else {
+				console.log('[geoip-lite2] Detected change in GeoIP data directory, reloading data...');
+			}
+
 			if (typeof callback === 'function') {
 				runAsyncReload(callback);
 			} else {

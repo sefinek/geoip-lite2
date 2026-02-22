@@ -31,7 +31,11 @@
   "license": "(Apache-2.0 AND CC-BY-SA-4.0)",
   "author": "Sefinek <contact@sefinek.net> (https://sefinek.net)",
   "contributors": [
-    "Philip Tellis <philip@bluesmoon.info> (https://bluesmoon.info)"
+    {
+      "name": "Philip Tellis",
+      "email": "philip@bluesmoon.info",
+      "url": "https://bluesmoon.info"
+    }
   ],
   "type": "commonjs",
   "exports": {
@@ -43,10 +47,12 @@
   "main": "index.js",
   "types": "index.d.ts",
   "directories": {
+    "example": "example",
     "test": "test"
   },
   "files": [
     "data",
+    "example",
     "tools",
     "AUTHORS",
     "scripts",
@@ -56,7 +62,7 @@
     "README.md"
   ],
   "scripts": {
-    "example": "node test/example.js",
+    "example": "node example/lookup-watch.js",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "m": "ncu -u && npm install && npm update",
