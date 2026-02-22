@@ -2,7 +2,7 @@ const utils = module.exports = {};
 
 utils.aton4 = a => {
 	const parts = a.split('.');
-	return ((parseInt(parts[0], 10) << 24) >>> 0) + ((parseInt(parts[1], 10) << 16) >>> 0) + ((parseInt(parts[2], 10) << 8) >>> 0) + (parseInt(parts[3], 10) >>> 0);
+	return ((Number.parseInt(parts[0], 10) << 24) >>> 0) + ((Number.parseInt(parts[1], 10) << 16) >>> 0) + ((Number.parseInt(parts[2], 10) << 8) >>> 0) + (Number.parseInt(parts[3], 10) >>> 0);
 };
 
 utils.ntoa4 = n => {
@@ -10,8 +10,6 @@ utils.ntoa4 = n => {
 };
 
 utils.aton6 = a => {
-	a = a.replace(/"/g, '');
-
 	let parts;
 	const omitStart = a.indexOf('::');
 	if (omitStart >= 0) {
@@ -27,15 +25,15 @@ utils.aton6 = a => {
 	}
 
 	for (let i = 0; i < 8; i++) {
-		parts[i] = parseInt(parts[i] || '0', 16);
+		parts[i] = Number.parseInt(parts[i] || '0', 16);
 	}
 
-	const r = [];
-	for (let i = 0; i < 4; i++) {
-		r.push(((parts[2 * i] << 16) + parts[(2 * i) + 1]) >>> 0);
-	}
-
-	return r;
+	return [
+		((parts[0] << 16) + parts[1]) >>> 0,
+		((parts[2] << 16) + parts[3]) >>> 0,
+		((parts[4] << 16) + parts[5]) >>> 0,
+		((parts[6] << 16) + parts[7]) >>> 0,
+	];
 };
 
 const ipv4ToUint32Strict = ip => {
@@ -158,7 +156,7 @@ utils.ntoa6 = n => {
 
 utils.cmp = (a, b) => {
 	if (typeof a === 'number' && typeof b === 'number') return (a < b ? -1 : (a > b ? 1 : 0));
-	if (a instanceof Array && b instanceof Array) return utils.cmp6(a, b);
+	if (Array.isArray(a) && Array.isArray(b)) return utils.cmp6(a, b);
 
 	return null;
 };
@@ -181,12 +179,14 @@ utils.removeNullTerminator = str => {
 	return nullIndex === -1 ? str : str.substring(0, nullIndex);
 };
 
-utils.readIp6 = (buffer, line, recordSize, offset) => {
-	const ipArray = [];
-	for (let i = 0; i < 4; i++) {
-		ipArray.push(buffer.readUInt32BE((line * recordSize) + (offset * 16) + (i * 4)));
-	}
-	return ipArray;
+utils.readIp6 = (buffer, line, recordSize, ipIndex) => {
+	const base = (line * recordSize) + (ipIndex * 16);
+	return [
+		buffer.readUInt32BE(base),
+		buffer.readUInt32BE(base + 4),
+		buffer.readUInt32BE(base + 8),
+		buffer.readUInt32BE(base + 12),
+	];
 };
 
 utils.createGeoData = () => ({

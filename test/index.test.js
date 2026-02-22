@@ -153,6 +153,19 @@ describe('GeoIP2', () => {
 			const after6 = geoIp.lookup('::ffff:173.185.182.82');
 			expect(before6).toEqual(after6);
 		});
+
+		it('should return null for 0.0.0.0 after clear()', () => {
+			geoIp.clear();
+			expect(geoIp.lookup('0.0.0.0')).toBeNull();
+			geoIp.reloadDataSync();
+		});
+
+		it('should return null for native IPv6 after clear()', () => {
+			geoIp.clear();
+			expect(geoIp.lookup('2001:4860:4860::8888')).toBeNull();
+			expect(geoIp.lookup('::1')).toBeNull();
+			geoIp.reloadDataSync();
+		});
 	});
 
 	describe('#testAsyncReload', () => {

@@ -34,7 +34,7 @@ const privateRange4 = [
 const conf4 = {
 	firstIP: null,
 	lastIP: null,
-	lastLine: 0,
+	lastRecordIdx: 0,
 	locationBuffer: null,
 	locationRecordSize: 88,
 	mainBuffer: null,
@@ -44,7 +44,7 @@ const conf4 = {
 const conf6 = {
 	firstIP: null,
 	lastIP: null,
-	lastLine: 0,
+	lastRecordIdx: 0,
 	mainBuffer: null,
 	recordSize: 48,
 };
@@ -56,8 +56,10 @@ const RECORD_SIZE = 10;
 const RECORD_SIZE6 = 34;
 
 const lookup4 = ip => {
+	if (!cache4.mainBuffer) return null;
+
 	let fline = 0;
-	let cline = cache4.lastLine;
+	let cline = cache4.lastRecordIdx;
 	let floor;
 	let ceil;
 	let line, locId;
@@ -68,11 +70,12 @@ const lookup4 = ip => {
 	const recordSize = cache4.recordSize;
 	const locRecordSize = cache4.locationRecordSize;
 
-	const geoData = createGeoData();
 	if (ip > cache4.lastIP || ip < cache4.firstIP) return null;
 	for (let i = 0; i < privateRange.length; i++) {
 		if (ip >= privateRange[i][0] && ip <= privateRange[i][1]) return null;
 	}
+
+	const geoData = createGeoData();
 
 	while (true) {
 		line = Math.round((cline - fline) / 2) + fline;
@@ -82,7 +85,7 @@ const lookup4 = ip => {
 
 		if (floor <= ip && ceil >= ip) {
 			if (recordSize === RECORD_SIZE) {
-				geoData.country = buffer.toString('utf8', offset + 8, offset + 10);
+				geoData.country = removeNullTerminator(buffer.toString('utf8', offset + 8, offset + 10));
 			} else {
 				locId = buffer.readUInt32BE(offset + 8);
 				populateGeoDataFromLocation({
@@ -115,20 +118,22 @@ const lookup4 = ip => {
 };
 
 const lookup6 = ip => {
+	if (!cache6.mainBuffer) return null;
+
 	const buffer = cache6.mainBuffer;
 	const recordSize = cache6.recordSize;
 	const locBuffer = cache4.locationBuffer;
 	const locRecordSize = cache4.locationRecordSize;
 
-	const geoData = createGeoData();
-
 	let fline = 0;
-	let cline = cache6.lastLine;
+	let cline = cache6.lastRecordIdx;
 	let floor;
 	let ceil;
 	let line, locId;
 
 	if (cmp6(ip, cache6.lastIP) > 0 || cmp6(ip, cache6.firstIP) < 0) return null;
+
+	const geoData = createGeoData();
 
 	while (true) {
 		line = Math.round((cline - fline) / 2) + fline;
@@ -179,17 +184,8 @@ const get4mapped = ip => {
 };
 
 const readFileBuffer = async filePath => {
-	const fileHandle = await fsPromises.open(filePath, 'r');
-	try {
-		const { size } = await fileHandle.stat();
-		const buffer = Buffer.alloc(size);
-		if (size > 0) {
-			await fileHandle.read(buffer, 0, size, 0);
-		}
-		return { buffer, size };
-	} finally {
-		await fileHandle.close();
-	}
+	const buffer = await fsPromises.readFile(filePath);
+	return { buffer, size: buffer.length };
 };
 
 const isExpectedMissingDataError = err => err?.code === 'ENOENT' || err?.code === 'EBADF';
@@ -210,13 +206,14 @@ const preloadAsync = async () => {
 		mainData = await readFileBuffer(dataFiles.city);
 	} catch (err) {
 		if (!isExpectedMissingDataError(err)) throw err;
+		asyncCache.locationBuffer = null;
 		mainData = await readFileBuffer(dataFiles.country);
 		asyncCache.recordSize = RECORD_SIZE;
 	}
 
 	asyncCache.mainBuffer = mainData.buffer;
-	asyncCache.lastLine = (mainData.size / asyncCache.recordSize) - 1;
-	asyncCache.lastIP = asyncCache.mainBuffer.readUInt32BE((asyncCache.lastLine * asyncCache.recordSize) + 4);
+	asyncCache.lastRecordIdx = (mainData.size / asyncCache.recordSize) - 1;
+	asyncCache.lastIP = asyncCache.mainBuffer.readUInt32BE((asyncCache.lastRecordIdx * asyncCache.recordSize) + 4);
 	asyncCache.firstIP = asyncCache.mainBuffer.readUInt32BE(0);
 	cache4 = asyncCache;
 };
@@ -248,6 +245,7 @@ const preload = callback => {
 				throw err;
 			}
 
+			cache4.locationBuffer = null;
 			datFile = openSync(dataFiles.country, 'r');
 			datSize = fstatSync(datFile).size;
 			cache4.recordSize = RECORD_SIZE;
@@ -257,8 +255,8 @@ const preload = callback => {
 		readSync(datFile, cache4.mainBuffer, 0, datSize, 0);
 		closeSync(datFile);
 
-		cache4.lastLine = (datSize / cache4.recordSize) - 1;
-		cache4.lastIP = cache4.mainBuffer.readUInt32BE((cache4.lastLine * cache4.recordSize) + 4);
+		cache4.lastRecordIdx = (datSize / cache4.recordSize) - 1;
+		cache4.lastIP = cache4.mainBuffer.readUInt32BE((cache4.lastRecordIdx * cache4.recordSize) + 4);
 		cache4.firstIP = cache4.mainBuffer.readUInt32BE(0);
 	}
 };
@@ -283,8 +281,8 @@ const preload6Async = async () => {
 	}
 
 	asyncCache6.mainBuffer = mainData.buffer;
-	asyncCache6.lastLine = (mainData.size / asyncCache6.recordSize) - 1;
-	asyncCache6.lastIP = readIp6(asyncCache6.mainBuffer, asyncCache6.lastLine, asyncCache6.recordSize, 1);
+	asyncCache6.lastRecordIdx = (mainData.size / asyncCache6.recordSize) - 1;
+	asyncCache6.lastIP = readIp6(asyncCache6.mainBuffer, asyncCache6.lastRecordIdx, asyncCache6.recordSize, 1);
 	asyncCache6.firstIP = readIp6(asyncCache6.mainBuffer, 0, asyncCache6.recordSize, 0);
 	cache6 = asyncCache6;
 };
@@ -319,15 +317,14 @@ const preload6 = callback => {
 		readSync(datFile, cache6.mainBuffer, 0, datSize, 0);
 		closeSync(datFile);
 
-		cache6.lastLine = (datSize / cache6.recordSize) - 1;
-		cache6.lastIP = readIp6(cache6.mainBuffer, cache6.lastLine, cache6.recordSize, 1);
+		cache6.lastRecordIdx = (datSize / cache6.recordSize) - 1;
+		cache6.lastIP = readIp6(cache6.mainBuffer, cache6.lastRecordIdx, cache6.recordSize, 1);
 		cache6.firstIP = readIp6(cache6.mainBuffer, 0, cache6.recordSize, 0);
 	}
 };
 
 const runAsyncReload = callback => {
-	preloadAsync()
-		.then(() => preload6Async())
+	Promise.all([preloadAsync(), preload6Async()])
 		.then(() => callback())
 		.catch(callback);
 };
@@ -335,7 +332,10 @@ const runAsyncReload = callback => {
 module.exports = {
 	lookup: ip => {
 		if (ip === undefined || ip === null) throw new TypeError('lookup(ip) requires an IP address');
-		if (typeof ip === 'number') return lookup4(ip);
+		if (typeof ip === 'number') {
+			if (!Number.isFinite(ip) || !Number.isInteger(ip) || ip < 0) return null;
+			return lookup4(ip);
+		}
 
 		const ipVersion = isIP(ip);
 		if (ipVersion === 4) {
@@ -394,4 +394,3 @@ module.exports = {
 
 preload();
 preload6();
-

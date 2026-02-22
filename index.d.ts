@@ -1,10 +1,10 @@
-interface GeoIp2Location {
+export interface GeoIp2Location {
     country: string;
     region: string;
     isEu: boolean;
     timezone: string;
     city: string;
-    ll: [number | null, number | null];
+    ll: [number, number] | [null, null];
     metro: number | null;
     area: number | null;
 }

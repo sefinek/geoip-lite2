@@ -116,7 +116,7 @@ const databases = [{
 	dest: ['geoip-city-names.dat', 'geoip-city.dat', 'geoip-city6.dat'],
 }];
 
-const mkdir = dirName => {
+const ensureParentDir = dirName => {
 	const dir = path.dirname(dirName);
 	fs.mkdirSync(dir, { recursive: true });
 };
@@ -128,7 +128,7 @@ const removePathSync = targetPath => {
 const tryFixingLine = line => {
 	let pos1 = 0;
 	let pos2 = -1;
-	line = line.replace(/""/, '\\"').replace(/'/g, '\\\'');
+	line = line.replace(/""/g, '\\"').replace(/'/g, '\\\'');
 
 	while (pos1 < line.length && pos2 < line.length) {
 		pos1 = pos2;
@@ -188,22 +188,30 @@ const getHTTPOptions = downloadUrl => {
 };
 
 const REDIRECT_STATUS_CODES = new Set([301, 302, 303, 307, 308]);
+const MAX_REDIRECTS = 10;
 
 const requestWithRedirect = (downloadUrl, onResponse) => {
-	const executeRequest = url => {
+	const executeRequest = (url, redirectCount) => {
 		const req = https.get(getHTTPOptions(url), response => {
 			const status = response.statusCode || 0;
 
 			if (REDIRECT_STATUS_CODES.has(status)) {
+				if (redirectCount >= MAX_REDIRECTS) {
+					logGlobalError(`Too many redirects (max ${MAX_REDIRECTS})`);
+					response.destroy();
+					process.exit(1);
+				}
+
 				const redirectLocation = response.headers.location;
 				if (!redirectLocation) {
 					logGlobalError(`HTTP redirect response without location header [${status}]`);
+					response.destroy();
 					process.exit(1);
 				}
 
 				response.resume();
 				const redirectUrl = new URL(redirectLocation, url).toString();
-				executeRequest(redirectUrl);
+				executeRequest(redirectUrl, redirectCount + 1);
 				return;
 			}
 
@@ -216,7 +224,7 @@ const requestWithRedirect = (downloadUrl, onResponse) => {
 		});
 	};
 
-	executeRequest(downloadUrl);
+	executeRequest(downloadUrl, 0);
 };
 
 const writeBuffer = (stream, buffer) => new Promise((resolve, reject) => {
@@ -329,7 +337,7 @@ const fetch = (database, cb) => {
 	}
 
 	logStepInfo(database, 2, `Downloading ${fileName}...`);
-	mkdir(tmpFile);
+	ensureParentDir(tmpFile);
 
 	requestWithRedirect(downloadUrl, (response, status) => {
 		if (status !== 200) {
@@ -420,7 +428,7 @@ const processLookupCountry = (database, src, cb) => {
 	logStepInfo(database, 4, `Building country lookup table from ${src}...`);
 
 	const rl = readline.createInterface({
-		input: fs.createReadStream(tmpDataFile, { encoding: 'latin1' }),
+		input: fs.createReadStream(tmpDataFile, { encoding: 'utf8' }),
 		output: process.stdout,
 		terminal: false,
 	});
@@ -454,7 +462,7 @@ const processCountryData = async (database, ipFamily, src, dest) => {
 	const tmpDataFile = path.join(tmpPath, src);
 
 	removePathSync(dataFile);
-	mkdir(dataFile);
+	ensureParentDir(dataFile);
 
 	logStepInfo(database, 4, `Processing ${ipFamily}: source=${src}; output=${dest}`);
 	const progress = createProgressLogger(database, 4, `Processing ${ipFamily}`);
@@ -494,7 +502,6 @@ const processCountryData = async (database, ipFamily, src, dest) => {
 				[sip, eip] = ipv4RangeFromCidr(fields[0]);
 
 				b = Buffer.alloc(bsz);
-				b.fill(0);
 				b.writeUInt32BE(sip, 0);
 				b.writeUInt32BE(eip, 4);
 			}
@@ -526,6 +533,7 @@ const processCityData = async (database, ipFamily, src, dest) => {
 	const tmpDataFile = path.join(tmpPath, src);
 
 	removePathSync(dataFile);
+	ensureParentDir(dataFile);
 
 	logStepInfo(database, 4, `Processing ${ipFamily}: source=${src}; output=${dest}`);
 	const progress = createProgressLogger(database, 4, `Processing ${ipFamily}`);
@@ -535,7 +543,7 @@ const processCityData = async (database, ipFamily, src, dest) => {
 		if (line.match(/^Copyright/) || !line.match(/\d/)) return;
 
 		const fields = CSVtoArray(line);
-		if (!fields) {
+		if (!fields || fields.length < 10) {
 			logStepWarn(database, 4, `Malformed ${ipFamily} line skipped: ${toLogPreview(line)}`);
 			return;
 		}
@@ -560,7 +568,6 @@ const processCityData = async (database, ipFamily, src, dest) => {
 			locId = cityLookup[locId];
 
 			b = Buffer.alloc(bsz);
-			b.fill(0);
 
 			for (i = 0; i < sip.length; i++) {
 				b.writeUInt32BE(sip[i], offset);
@@ -586,7 +593,6 @@ const processCityData = async (database, ipFamily, src, dest) => {
 			locId = parseInt(fields[1], 10);
 			locId = cityLookup[locId];
 			b = Buffer.alloc(bsz);
-			b.fill(0);
 			b.writeUInt32BE(sip >>> 0, 0);
 			b.writeUInt32BE(eip >>> 0, 4);
 			b.writeUInt32BE(locId >>> 0, 8);
@@ -649,7 +655,6 @@ const processCityDataNames = (database, src, dest, cb) => {
 		const tz = fields[12];
 		const isEuFlag = fields[13];
 
-		b.fill(0);
 		b.write(cc, 0);
 		b.write(rg, 2);
 
@@ -700,21 +705,14 @@ const processData = (database, cb) => {
 	const dest = database.dest;
 
 	if (type === 'country') {
-		if (Array.isArray(src)) {
-			processLookupCountry(database, src[0], err => {
-				if (err) return cb(err);
-				processCountryData(database, 'country IPv4 data', src[1], dest[1]).then(() => {
-					return processCountryData(database, 'country IPv6 data', src[2], dest[2]);
-				}).then(() => {
-					cb(null, database);
-				}).catch(cb);
-			});
-		}
-		else {
-			processCountryData(database, 'country data', src, dest).then(() => {
+		processLookupCountry(database, src[0], err => {
+			if (err) return cb(err);
+			processCountryData(database, 'country IPv4 data', src[1], dest[1]).then(() => {
+				return processCountryData(database, 'country IPv6 data', src[2], dest[2]);
+			}).then(() => {
 				cb(null, database);
 			}).catch(cb);
-		}
+		});
 	} else if (type === 'city') {
 		processCityDataNames(database, src[0], dest[0], err => {
 			if (err) return cb(err);
@@ -724,6 +722,8 @@ const processData = (database, cb) => {
 				cb(null, database);
 			}).catch(cb);
 		});
+	} else {
+		cb(new Error(`Unknown database type: "${type}"`));
 	}
 };
 
@@ -742,7 +742,7 @@ if (!license_key) {
 }
 
 removePathSync(tmpPath);
-mkdir(tmpPath);
+fs.mkdirSync(tmpPath, { recursive: true });
 
 const invokeStep = (fn, ...stepArgs) => new Promise((resolve, reject) => {
 	fn(...stepArgs, (err, ...results) => {

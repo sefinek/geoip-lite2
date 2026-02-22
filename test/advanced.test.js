@@ -217,6 +217,19 @@ describe('Advanced geoIp Tests', () => {
 			expect(result).toBeNull();
 		});
 
+		it('should return null for NaN input', () => {
+			expect(geoIp.lookup(NaN)).toBeNull();
+		});
+
+		it('should return null for float input', () => {
+			expect(geoIp.lookup(1.5)).toBeNull();
+		});
+
+		it('should return null for Infinity input', () => {
+			expect(geoIp.lookup(Infinity)).toBeNull();
+			expect(geoIp.lookup(-Infinity)).toBeNull();
+		});
+
 		it('should handle numbers larger than max IPv4', () => {
 			const result = geoIp.lookup(4294967296);
 			expect(result).toBeNull();
