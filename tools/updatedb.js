@@ -70,8 +70,8 @@ const createProgressLogger = (database, step, activity) => {
 
 const args = process.argv.slice(2);
 let license_key = args.find(arg => arg.match(/^license_key=[a-zA-Z0-9]+/) !== null);
-if (typeof license_key === 'undefined' && typeof process.env.LICENSE_KEY !== 'undefined') {
-	license_key = `license_key=${process.env.LICENSE_KEY}`;
+if (typeof license_key === 'undefined' && typeof process.env.MAXMIND_KEY !== 'undefined') {
+	license_key = `license_key=${process.env.MAXMIND_KEY}`;
 }
 
 let geoDataDir = args.find(arg => arg.match(/^geoDataDir=[\w./]+/) !== null);
