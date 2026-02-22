@@ -20,7 +20,7 @@ describe('GeoIP2', () => {
 			const actual = geoIp.lookup('83.13.246.1');
 			expect(actual.country).toBe('PL');
 			expect(actual.region).toBe('14');
-			expect(actual.eu).toBe('1');
+			expect(actual.isEu).toBe(true);
 			expect(actual.timezone).toBe('Europe/Warsaw');
 			expect(actual.city).toBe('Warsaw');
 			expect(actual.ll).toBeTruthy();
@@ -32,7 +32,7 @@ describe('GeoIP2', () => {
 			const actual = geoIp.lookup('72.229.28.185');
 			expect(actual.country).toBe('US');
 			expect(actual.region).toBe('NY');
-			expect(actual.eu).toBe('0');
+			expect(actual.isEu).toBe(false);
 			expect(actual.timezone).toBe('America/New_York');
 			expect(actual.city).toBe('New York');
 			expect(actual.ll).toBeTruthy();
@@ -43,7 +43,7 @@ describe('GeoIP2', () => {
 		it('should match data for IPv4 - JP', () => {
 			const actual = geoIp.lookup('210.138.184.59');
 			expect(actual.country).toBe('JP');
-			expect(actual.eu).toBe('0');
+			expect(actual.isEu).toBe(false);
 			expect(actual.timezone).toBe('Asia/Tokyo');
 			expect(actual.city).toBe('');
 			expect(actual.ll).toBeTruthy();
@@ -55,7 +55,7 @@ describe('GeoIP2', () => {
 			const actual = geoIp.lookup('109.108.63.255');
 			expect(actual.country).toBe('RU');
 			expect(actual.region).toBe('IVA');
-			expect(actual.eu).toBe('0');
+			expect(actual.isEu).toBe(false);
 			expect(actual.timezone).toBe('Europe/Moscow');
 			expect(actual.city).toBe('Ivanovo');
 			expect(actual.ll).toBeTruthy();
@@ -69,7 +69,7 @@ describe('GeoIP2', () => {
 			const actual = geoIp.lookup('2a01:118f:30a:3900:c954:e6ef:8067:d4e8');
 			expect(actual.country).toBe('PL');
 			expect(actual.region).toBe('06');
-			expect(actual.eu).toBe('1');
+			expect(actual.isEu).toBe(true);
 			expect(actual.timezone).toBe('Europe/Warsaw');
 			expect(actual.city).toBe('Miączyn');
 			expect(actual.ll).toBeTruthy();
@@ -81,7 +81,7 @@ describe('GeoIP2', () => {
 			const actual = geoIp.lookup('2001:1c04:400::1');
 			expect(actual.country).toBe('NL');
 			expect(actual.region).toBe('NH');
-			expect(actual.eu).toBe('1');
+			expect(actual.isEu).toBe(true);
 			expect(actual.timezone).toBe('Europe/Amsterdam');
 			expect(actual.city).toBe('Zandvoort');
 			expect(actual.ll).toBeTruthy();
@@ -93,7 +93,7 @@ describe('GeoIP2', () => {
 			const actual = geoIp.lookup('2400:8500:1302:814:a163:44:173:238f');
 			expect(actual.country).toBe('JP');
 			expect(actual.region).toBe('');
-			expect(actual.eu).toBe('0');
+			expect(actual.isEu).toBe(false);
 			expect(actual.timezone).toBe('Asia/Tokyo');
 			expect(actual.city).toBe('');
 			expect(actual.ll).toBeTruthy();

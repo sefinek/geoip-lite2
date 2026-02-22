@@ -85,10 +85,9 @@ describe('Advanced geoIp Tests', () => {
 	describe('#DataStructure', () => {
 		it('should return correct data structure', () => {
 			const result = geoIp.lookup('8.8.8.8');
-			expect(result).toHaveProperty('range');
 			expect(result).toHaveProperty('country');
 			expect(result).toHaveProperty('region');
-			expect(result).toHaveProperty('eu');
+			expect(result).toHaveProperty('isEu');
 			expect(result).toHaveProperty('timezone');
 			expect(result).toHaveProperty('city');
 			expect(result).toHaveProperty('ll');
@@ -96,10 +95,9 @@ describe('Advanced geoIp Tests', () => {
 			expect(result).toHaveProperty('area');
 		});
 
-		it('should have array for range', () => {
+		it('should not expose range', () => {
 			const result = geoIp.lookup('8.8.8.8');
-			expect(Array.isArray(result.range)).toBe(true);
-			expect(result.range.length).toBe(2);
+			expect(Object.prototype.hasOwnProperty.call(result, 'range')).toBe(false);
 		});
 
 		it('should have array for ll (latitude/longitude)', () => {
@@ -161,20 +159,20 @@ describe('Advanced geoIp Tests', () => {
 	});
 
 	describe('#EUFlag', () => {
-		it('should have EU flag "1" for EU countries', () => {
+		it('should have isEu=true for EU countries', () => {
 			const poland = geoIp.lookup('83.13.246.1');
-			expect(poland.eu).toBe('1');
+			expect(poland.isEu).toBe(true);
 
 			const netherlands = geoIp.lookup('2001:1c04:400::1');
-			expect(netherlands.eu).toBe('1');
+			expect(netherlands.isEu).toBe(true);
 		});
 
-		it('should have EU flag "0" for non-EU countries', () => {
+		it('should have isEu=false for non-EU countries', () => {
 			const us = geoIp.lookup('72.229.28.185');
-			expect(us.eu).toBe('0');
+			expect(us.isEu).toBe(false);
 
 			const japan = geoIp.lookup('210.138.184.59');
-			expect(japan.eu).toBe('0');
+			expect(japan.isEu).toBe(false);
 		});
 	});
 

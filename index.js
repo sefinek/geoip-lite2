@@ -1,7 +1,7 @@
-const { open, fstat, read, close, openSync, fstatSync, readSync, closeSync } = require('node:fs');
+const { openSync, fstatSync, readSync, closeSync } = require('node:fs');
+const fsPromises = require('node:fs/promises');
 const { basename, join, resolve } = require('node:path');
 const { isIP } = require('node:net');
-const async = require('async');
 const { aton4, aton6, cmp6, removeNullTerminator, readIp6, createGeoData, populateGeoDataFromLocation } = require('./scripts/utils.js');
 const fsWatcher = require('./scripts/fsWatcher.js');
 const { version } = require('./package.json');
@@ -81,8 +81,6 @@ const lookup4 = ip => {
 		ceil = buffer.readUInt32BE(offset + 4);
 
 		if (floor <= ip && ceil >= ip) {
-			geoData.range = [floor, ceil];
-
 			if (recordSize === RECORD_SIZE) {
 				geoData.country = buffer.toString('utf8', offset + 8, offset + 10);
 			} else {
@@ -180,105 +178,55 @@ const get4mapped = ip => {
 	return null;
 };
 
-const preload = callback => {
-	let datFile;
-	let datSize;
+const readFileBuffer = async filePath => {
+	const fileHandle = await fsPromises.open(filePath, 'r');
+	try {
+		const { size } = await fileHandle.stat();
+		const buffer = Buffer.alloc(size);
+		if (size > 0) {
+			await fileHandle.read(buffer, 0, size, 0);
+		}
+		return { buffer, size };
+	} finally {
+		await fileHandle.close();
+	}
+};
+
+const isExpectedMissingDataError = err => err?.code === 'ENOENT' || err?.code === 'EBADF';
+
+const preloadAsync = async () => {
 	const asyncCache = { ...conf4 };
+	let mainData;
+
+	try {
+		const cityNamesData = await readFileBuffer(dataFiles.cityNames);
+		if (cityNamesData.size === 0) {
+			const emptyFileError = new Error('geoip-city-names.dat is empty');
+			emptyFileError.code = 'ENOENT';
+			throw emptyFileError;
+		}
+
+		asyncCache.locationBuffer = cityNamesData.buffer;
+		mainData = await readFileBuffer(dataFiles.city);
+	} catch (err) {
+		if (!isExpectedMissingDataError(err)) throw err;
+		mainData = await readFileBuffer(dataFiles.country);
+		asyncCache.recordSize = RECORD_SIZE;
+	}
+
+	asyncCache.mainBuffer = mainData.buffer;
+	asyncCache.lastLine = (mainData.size / asyncCache.recordSize) - 1;
+	asyncCache.lastIP = asyncCache.mainBuffer.readUInt32BE((asyncCache.lastLine * asyncCache.recordSize) + 4);
+	asyncCache.firstIP = asyncCache.mainBuffer.readUInt32BE(0);
+	cache4 = asyncCache;
+};
+
+const preload = callback => {
 	if (typeof callback === 'function') {
-		void async.series([
-			cb => {
-				void async.series([
-					cb2 => {
-						open(dataFiles.cityNames, 'r', (err, file) => {
-							datFile = file;
-							cb2(err);
-						});
-					},
-					cb2 => {
-						fstat(datFile, (err, stats) => {
-							if (err) {
-								cb2(err);
-								return;
-							}
-							datSize = stats.size;
-							asyncCache.locationBuffer = Buffer.alloc(datSize);
-							cb2();
-						});
-					},
-					cb2 => {
-						read(datFile, asyncCache.locationBuffer, 0, datSize, 0, cb2);
-					},
-					cb2 => {
-						close(datFile, cb2);
-					},
-					cb2 => {
-						open(dataFiles.city, 'r', (err, file) => {
-							datFile = file;
-							cb2(err);
-						});
-					},
-					cb2 => {
-						fstat(datFile, (err, stats) => {
-							if (err) {
-								cb2(err);
-								return;
-							}
-							datSize = stats.size;
-							cb2();
-						});
-					},
-				], err => {
-					if (err) {
-						if (err.code !== 'ENOENT' && err.code !== 'EBADF') {
-							cb(err);
-							return;
-						}
-
-						open(dataFiles.country, 'r', (err, file) => {
-							if (err) {
-								cb(err);
-							} else {
-								datFile = file;
-								fstat(datFile, (err, stats) => {
-									if (err) {
-										cb(err);
-										return;
-									}
-									datSize = stats.size;
-									asyncCache.recordSize = RECORD_SIZE;
-
-									cb();
-								});
-							}
-						});
-
-					} else {
-						cb();
-					}
-				});
-			},
-			cb => {
-				asyncCache.mainBuffer = Buffer.alloc(datSize);
-
-				void async.series([
-					cb2 => {
-						read(datFile, asyncCache.mainBuffer, 0, datSize, 0, cb2);
-					},
-					cb2 => {
-						close(datFile, cb2);
-					},
-				], err => {
-					if (!err) {
-						asyncCache.lastLine = (datSize / asyncCache.recordSize) - 1;
-						asyncCache.lastIP = asyncCache.mainBuffer.readUInt32BE((asyncCache.lastLine * asyncCache.recordSize) + 4);
-						asyncCache.firstIP = asyncCache.mainBuffer.readUInt32BE(0);
-						cache4 = asyncCache;
-					}
-					cb(err);
-				});
-			},
-		], callback);
+		preloadAsync().then(() => callback()).catch(callback);
 	} else {
+		let datFile;
+		let datSize;
 		try {
 			datFile = openSync(dataFiles.cityNames, 'r');
 			datSize = fstatSync(datFile).size;
@@ -315,81 +263,38 @@ const preload = callback => {
 	}
 };
 
-const preload6 = callback => {
-	let datFile;
-	let datSize;
+const preload6Async = async () => {
 	const asyncCache6 = { ...conf6 };
+	let mainData;
+
+	try {
+		const cityData = await readFileBuffer(dataFiles.city6);
+		if (cityData.size === 0) {
+			const emptyFileError = new Error('geoip-city6.dat is empty');
+			emptyFileError.code = 'ENOENT';
+			throw emptyFileError;
+		}
+
+		mainData = cityData;
+	} catch (err) {
+		if (!isExpectedMissingDataError(err)) throw err;
+		mainData = await readFileBuffer(dataFiles.country6);
+		asyncCache6.recordSize = RECORD_SIZE6;
+	}
+
+	asyncCache6.mainBuffer = mainData.buffer;
+	asyncCache6.lastLine = (mainData.size / asyncCache6.recordSize) - 1;
+	asyncCache6.lastIP = readIp6(asyncCache6.mainBuffer, asyncCache6.lastLine, asyncCache6.recordSize, 1);
+	asyncCache6.firstIP = readIp6(asyncCache6.mainBuffer, 0, asyncCache6.recordSize, 0);
+	cache6 = asyncCache6;
+};
+
+const preload6 = callback => {
 	if (typeof callback === 'function') {
-		void async.series([
-			cb => {
-				void async.series([
-					cb2 => {
-						open(dataFiles.city6, 'r', (err, file) => {
-							datFile = file;
-							cb2(err);
-						});
-					},
-					cb2 => {
-						fstat(datFile, (err, stats) => {
-							if (err) {
-								cb2(err);
-								return;
-							}
-							datSize = stats.size;
-							cb2();
-						});
-					},
-				], err => {
-					if (err) {
-						if (err.code !== 'ENOENT' && err.code !== 'EBADF') {
-							cb(err);
-							return;
-						}
-
-						open(dataFiles.country6, 'r', (err, file) => {
-							if (err) {
-								cb(err);
-							} else {
-								datFile = file;
-								fstat(datFile, (err, stats) => {
-									if (err) {
-										cb(err);
-										return;
-									}
-									datSize = stats.size;
-									asyncCache6.recordSize = RECORD_SIZE6;
-
-									cb();
-								});
-							}
-						});
-					} else {
-						cb();
-					}
-				});
-			},
-			cb => {
-				asyncCache6.mainBuffer = Buffer.alloc(datSize);
-
-				void async.series([
-					cb2 => {
-						read(datFile, asyncCache6.mainBuffer, 0, datSize, 0, cb2);
-					},
-					cb2 => {
-						close(datFile, cb2);
-					},
-				], err => {
-					if (!err) {
-						asyncCache6.lastLine = (datSize / asyncCache6.recordSize) - 1;
-						asyncCache6.lastIP = readIp6(asyncCache6.mainBuffer, asyncCache6.lastLine, asyncCache6.recordSize, 1);
-						asyncCache6.firstIP = readIp6(asyncCache6.mainBuffer, 0, asyncCache6.recordSize, 0);
-						cache6 = asyncCache6;
-					}
-					cb(err);
-				});
-			},
-		], callback);
+		preload6Async().then(() => callback()).catch(callback);
 	} else {
+		let datFile;
+		let datSize;
 		try {
 			datFile = openSync(dataFiles.city6, 'r');
 			datSize = fstatSync(datFile).size;
@@ -421,14 +326,10 @@ const preload6 = callback => {
 };
 
 const runAsyncReload = callback => {
-	void async.series([
-		cb => {
-			preload(cb);
-		},
-		cb => {
-			preload6(cb);
-		},
-	], callback);
+	preloadAsync()
+		.then(() => preload6Async())
+		.then(() => callback())
+		.catch(callback);
 };
 
 module.exports = {

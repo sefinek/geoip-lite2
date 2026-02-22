@@ -51,10 +51,9 @@ console.log(geoIp.lookup(ip));
 ### Output
 ```json
 {
-  "range": [ 2450746624, 2450746879 ],
   "country": "PL",
   "region": "14",
-  "eu": "1",
+  "isEu": true,
   "timezone": "Europe/Warsaw",
   "city": "Warsaw",
   "ll": [ 52.2296, 21.0067 ],
@@ -90,13 +89,12 @@ If the IP address was found, the `lookup` method returns an object with the foll
 
 ```js
 {
-   range: [ <low bound of IP block>, <high bound of IP block> ],
    country: 'CC',                 // 2 letter ISO-3166-1 country code
    region: 'RR',                  // Up to 3 alphanumeric characters as ISO 3166-2 code
                                   // For US states this is the 2 letter state
                                   // For the United Kingdom this could be ENG as a country like "England"
                                   // FIPS 10-4 subcountry code
-   eu: '0',                       // 1 if the country is a member state of the European Union, 0 otherwise.
+   isEu: true,                    // true if the country is a member state of the European Union, otherwise false.
    timezone: 'Country/Zone',      // Timezone from IANA Time Zone Database
    city: 'City name',             // Full city name
    ll: [<latitude>, <longitude>], // Latitude and longitude of the city

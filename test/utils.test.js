@@ -79,6 +79,44 @@ describe('Utility Functions', () => {
 		});
 	});
 
+	describe('#ipv4RangeFromCidr', () => {
+		it('should convert IPv4 CIDR to start/end range', () => {
+			const [start, end] = utils.ipv4RangeFromCidr('192.168.1.10/24');
+			expect(start).toBe(utils.aton4('192.168.1.0'));
+			expect(end).toBe(utils.aton4('192.168.1.255'));
+		});
+
+		it('should handle /0 full range', () => {
+			const [start, end] = utils.ipv4RangeFromCidr('0.0.0.0/0');
+			expect(start).toBe(0);
+			expect(end).toBe(4294967295);
+		});
+
+		it('should throw for invalid IPv4 CIDR', () => {
+			expect(() => utils.ipv4RangeFromCidr('10.0.0/8')).toThrow(TypeError);
+			expect(() => utils.ipv4RangeFromCidr('10.0.0.1/33')).toThrow(TypeError);
+		});
+	});
+
+	describe('#ipv6RangeFromCidr', () => {
+		it('should convert IPv6 CIDR to start/end range', () => {
+			const [start, end] = utils.ipv6RangeFromCidr('2001:db8::/126');
+			expect(start).toEqual(utils.aton6('2001:db8::'));
+			expect(end).toEqual(utils.aton6('2001:db8::3'));
+		});
+
+		it('should handle /128 as a single-address range', () => {
+			const [start, end] = utils.ipv6RangeFromCidr('2001:db8::1/128');
+			expect(start).toEqual(utils.aton6('2001:db8::1'));
+			expect(end).toEqual(utils.aton6('2001:db8::1'));
+		});
+
+		it('should throw for invalid IPv6 CIDR', () => {
+			expect(() => utils.ipv6RangeFromCidr('2001:db8::/129')).toThrow(TypeError);
+			expect(() => utils.ipv6RangeFromCidr('2001:::1/64')).toThrow(TypeError);
+		});
+	});
+
 	describe('#ntoa6', () => {
 		it('should convert array to IPv6 string', () => {
 			const result = utils.ntoa6([0, 0, 0, 1]);
@@ -195,7 +233,7 @@ describe('Utility Functions', () => {
 			expect(geoData.country).toBe('US');
 			expect(geoData.region).toBe('NY');
 			expect(geoData.metro).toBe(501);
-			expect(geoData.eu).toBe('0');
+			expect(geoData.isEu).toBe(false);
 			expect(geoData.timezone).toBe('America/New_York');
 			expect(geoData.city).toBe('New York');
 			expect(geoData.ll).toEqual([40.7128, -74.006]);

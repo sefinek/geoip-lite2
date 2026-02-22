@@ -36,7 +36,7 @@ describe('Watcher integration', () => {
 					60 * 1000,
 					expect.any(Function)
 				);
-				expect(logSpy).toHaveBeenCalledWith('[geoip-lite2] Detected change in "geoip-city.dat". Reloading data...');
+				expect(logSpy).toHaveBeenCalledWith('[geoip-lite2] Detected change in "geoip-city.dat", reloading data...');
 				done();
 			} catch (assertErr) {
 				done(assertErr);

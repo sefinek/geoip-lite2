@@ -1,8 +1,7 @@
 interface GeoIp2Location {
-    range: [number | null, number | null];
     country: string;
     region: string;
-    eu: '0' | '1' | '';
+    isEu: boolean;
     timezone: string;
     city: string;
     ll: [number | null, number | null];

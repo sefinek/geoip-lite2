@@ -38,6 +38,112 @@ utils.aton6 = a => {
 	return r;
 };
 
+const ipv4ToUint32Strict = ip => {
+	const octets = ip.split('.');
+	if (octets.length !== 4) throw new TypeError(`Invalid IPv4 address: ${ip}`);
+
+	for (let i = 0; i < octets.length; i++) {
+		const octet = Number.parseInt(octets[i], 10);
+		if (!Number.isInteger(octet) || octet < 0 || octet > 255) {
+			throw new TypeError(`Invalid IPv4 address: ${ip}`);
+		}
+	}
+
+	return utils.aton4(ip);
+};
+
+utils.ipv4RangeFromCidr = cidr => {
+	const [ip, prefixText] = cidr.split('/');
+	const prefix = Number.parseInt(prefixText, 10);
+	if (!Number.isInteger(prefix) || prefix < 0 || prefix > 32) {
+		throw new TypeError(`Invalid IPv4 CIDR: ${cidr}`);
+	}
+
+	const address = ipv4ToUint32Strict(ip);
+	const mask = prefix === 0 ? 0 : (0xFFFFFFFF << (32 - prefix)) >>> 0;
+	const start = (address & mask) >>> 0;
+	const hostMask = (~mask) >>> 0;
+	const end = (start | hostMask) >>> 0;
+
+	return [start, end];
+};
+
+const normalizeIpv6WithEmbeddedIpv4 = ip => {
+	if (!ip.includes('.')) return ip;
+
+	const lastColon = ip.lastIndexOf(':');
+	if (lastColon === -1) throw new TypeError(`Invalid IPv6 address: ${ip}`);
+
+	const ipv4Part = ip.slice(lastColon + 1);
+	const ipv4Int = ipv4ToUint32Strict(ipv4Part);
+	const high = ((ipv4Int >>> 16) & 0xFFFF).toString(16);
+	const low = (ipv4Int & 0xFFFF).toString(16);
+
+	return `${ip.slice(0, lastColon)}:${high}:${low}`;
+};
+
+const ipv6ToBigInt = ip => {
+	const normalized = normalizeIpv6WithEmbeddedIpv4(ip).toLowerCase();
+	const hasCompression = normalized.includes('::');
+	if (hasCompression && normalized.indexOf('::') !== normalized.lastIndexOf('::')) {
+		throw new TypeError(`Invalid IPv6 address: ${ip}`);
+	}
+
+	let groups;
+	if (hasCompression) {
+		const [leftRaw, rightRaw] = normalized.split('::');
+		const left = leftRaw ? leftRaw.split(':') : [];
+		const right = rightRaw ? rightRaw.split(':') : [];
+		const omitted = 8 - left.length - right.length;
+		if (omitted < 0) throw new TypeError(`Invalid IPv6 address: ${ip}`);
+		groups = [...left, ...new Array(omitted).fill('0'), ...right];
+	} else {
+		groups = normalized.split(':');
+	}
+
+	if (groups.length !== 8) throw new TypeError(`Invalid IPv6 address: ${ip}`);
+
+	let value = 0n;
+	for (let i = 0; i < groups.length; i++) {
+		const group = groups[i] || '0';
+		const groupValue = Number.parseInt(group, 16);
+		if (!Number.isInteger(groupValue) || groupValue < 0 || groupValue > 0xFFFF) {
+			throw new TypeError(`Invalid IPv6 address: ${ip}`);
+		}
+		value = (value << 16n) + BigInt(groupValue);
+	}
+
+	return value;
+};
+
+const bigIntToIpv6Uint32Array = value => {
+	return [
+		Number((value >> 96n) & 0xFFFFFFFFn),
+		Number((value >> 64n) & 0xFFFFFFFFn),
+		Number((value >> 32n) & 0xFFFFFFFFn),
+		Number(value & 0xFFFFFFFFn),
+	];
+};
+
+utils.ipv6RangeFromCidr = cidr => {
+	const [ip, prefixText] = cidr.split('/');
+	const prefix = Number.parseInt(prefixText, 10);
+	if (!Number.isInteger(prefix) || prefix < 0 || prefix > 128) {
+		throw new TypeError(`Invalid IPv6 CIDR: ${cidr}`);
+	}
+
+	const address = ipv6ToBigInt(ip);
+	const hostBits = 128n - BigInt(prefix);
+	const networkMask = prefix === 0 ? 0n : ((1n << BigInt(prefix)) - 1n) << hostBits;
+	const start = address & networkMask;
+	const end = start | (hostBits === 0n ? 0n : ((1n << hostBits) - 1n));
+
+	return [
+		bigIntToIpv6Uint32Array(start),
+		bigIntToIpv6Uint32Array(end),
+	];
+};
+
 utils.ntoa6 = n => {
 	let a = '[';
 
@@ -84,10 +190,9 @@ utils.readIp6 = (buffer, line, recordSize, offset) => {
 };
 
 utils.createGeoData = () => ({
-	range: [null, null],
 	country: '',
 	region: '',
-	eu: '',
+	isEu: false,
 	timezone: '',
 	city: '',
 	ll: [null, null],
@@ -114,7 +219,7 @@ utils.populateGeoDataFromLocation = ({
 	geoData.ll[0] = coordBuffer.readInt32BE(latitudeOffset) / 10000;
 	geoData.ll[1] = coordBuffer.readInt32BE(longitudeOffset) / 10000;
 	geoData.area = coordBuffer.readUInt32BE(areaOffset);
-	geoData.eu = utils.removeNullTerminator(locationBuffer.toString('utf8', locOffset + 9, locOffset + 10));
+	geoData.isEu = utils.removeNullTerminator(locationBuffer.toString('utf8', locOffset + 9, locOffset + 10)) === '1';
 	geoData.timezone = utils.removeNullTerminator(locationBuffer.toString('utf8', locOffset + 10, locOffset + 42));
 	geoData.city = utils.removeNullTerminator(locationBuffer.toString('utf8', locOffset + 42, locOffset + locationRecordSize));
 };
