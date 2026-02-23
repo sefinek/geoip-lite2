@@ -13,7 +13,7 @@ const reportReloadError = err => {
 
 const geoDataDir = resolve(
 	__dirname,
-	globalThis['geoDataDir'] || process.env.GEODATADIR || './data/'
+	globalThis['geoDataDir'] || process.env.GEOIP_DATA_DIR || './data/'
 );
 
 const dataFiles = {

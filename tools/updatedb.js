@@ -75,8 +75,8 @@ if (typeof license_key === 'undefined' && typeof process.env.MAXMIND_KEY !== 'un
 }
 
 let geoDataDir = args.find(arg => arg.match(/^geoDataDir=[\w./]+/) !== null);
-if (typeof geoDataDir === 'undefined' && typeof process.env.GEODATADIR !== 'undefined') {
-	geoDataDir = `geoDataDir=${process.env.GEODATADIR}`;
+if (typeof geoDataDir === 'undefined' && typeof process.env.GEOIP_DATA_DIR !== 'undefined') {
+	geoDataDir = `geoDataDir=${process.env.GEOIP_DATA_DIR}`;
 }
 
 let dataPath = path.resolve(__dirname, '..', 'data');
@@ -88,7 +88,7 @@ if (typeof geoDataDir !== 'undefined') {
 	}
 }
 
-const tmpPath = process.env.GEOTMPDIR || path.resolve(__dirname, '..', 'tmp');
+const tmpPath = process.env.GEOIP_TMP_DIR || path.resolve(__dirname, '..', 'tmp');
 const countryLookup = {};
 const cityLookup = { NaN: -1 };
 const databases = [{

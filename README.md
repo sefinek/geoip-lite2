@@ -1,8 +1,8 @@
 <div align="center">
-    <a href="https://cdn.sefinek.net/images/npm/geoip-lite2/banner.png?v=3.0.0-alpha.0" target="_blank" title="Full screen">
-        <img src="https://cdn.sefinek.net/images/npm/geoip-lite2/banner.png?v=3.0.0-alpha.0" alt="GeoIP-Lite v2.3 banner">
+    <a href="https://cdn.sefinek.net/images/npm/geoip-lite2/banner.png?v=4.0.0-alpha.0" target="_blank" title="Full screen">
+        <img src="https://cdn.sefinek.net/images/npm/geoip-lite2/banner.png?v=4.0.0-alpha.0" alt="geoip-lite2 banner">
     </a>
-    <br>    
+    <br>
     <p>
         A native <a href="https://nodejs.org" target="_blank" title="Open nodejs.org">Node.js</a> API for GeoLite data from MaxMind.<br>
         This library includes GeoLite data created by MaxMind, available from <a href="https://www.maxmind.com" target="_blank" title="Open www.maxmind.com">maxmind.com</a>.
@@ -20,15 +20,15 @@ Actively maintained and optimized fork of [geoip-lite](https://github.com/geoip-
 Fully native JS implementation with synchronous, in-memory lookups for IPv4 and IPv6.
 Includes automated test coverage using [Jest](https://www.npmjs.com/package/jest).
 
-> [!WARNING]  
-> Remember to regularly update the MaxMind database! You will need a token for this.
+> [!WARNING]
+> Remember to regularly update the MaxMind database! You will need a license key for this.
 
-> [!NOTE]  
+> [!NOTE]
 > This requires a large amount of RAM. It is known to fail on a Digital Ocean or AWS micro instance.
 > This behavior is intentional, as the library prioritizes performance by keeping all data in memory.
 
-> [!NOTE]  
-> Please note that IPv6 geolocation data may be less complete depending on the version of the GeoLite database.
+> [!NOTE]
+> IPv6 geolocation data may be less complete depending on the version of the GeoLite database.
 
 
 ## 🛠️ Installation
@@ -38,7 +38,15 @@ npm install geoip-lite2
 ```
 
 ### 2. Update the data files (required)
-Run `cd node_modules/geoip-lite2 && npm run updatedb license_key=YOUR_LICENSE_KEY` to update the data files. Replace `YOUR_LICENSE_KEY` with your license key obtained from [maxmind.com](https://support.maxmind.com/hc/en-us/articles/4407111582235-Generate-a-License-Key).
+Run the update script with your MaxMind license key (obtainable for free from [maxmind.com](https://support.maxmind.com/hc/en-us/articles/4407111582235-Generate-a-License-Key)):
+```shell
+cd node_modules/geoip-lite2 && npm run updatedb license_key=YOUR_LICENSE_KEY
+```
+
+Or set the key via an environment variable and run from your project root:
+```shell
+MAXMIND_KEY=YOUR_LICENSE_KEY node node_modules/geoip-lite2/tools/updatedb.js
+```
 
 ## 📝 Short Example
 ```js
@@ -77,29 +85,28 @@ Startup may take up to 200 ms while reading and indexing data files into memory.
 
 ### Looking up an IP address
 If you have an IP address in dotted IPv4 notation, colon IPv6 notation, or a 32-bit unsigned integer (treated as an IPv4 address),
-pass it to the `lookup` method. Remember to remove any `[` and `]` around an IPv6 address before passing it to this method.
+pass it to the `lookup` method.
 
 ```js
 const geo = geoIp.lookup(ip);
 ```
 
-If `ip` is missing (`undefined` or `null`), `lookup` throws a `TypeError`.
+If `ip` is `undefined` or `null`, `lookup` throws a `TypeError`.
+For any other invalid input (empty string, non-IP string, non-finite or noninteger number), it returns `null`.
 
 If the IP address was found, the `lookup` method returns an object with the following structure:
 
 ```js
 {
-   country: 'CC',                 // 2 letter ISO-3166-1 country code
-   region: 'RR',                  // Up to 3 alphanumeric characters as ISO 3166-2 code
-                                  // For US states this is the 2 letter state
-                                  // For the United Kingdom this could be ENG as a country like "England"
-                                  // FIPS 10-4 subcountry code
-   isEu: true,                    // true if the country is a member state of the European Union, otherwise false.
-   timezone: 'Country/Zone',      // Timezone from IANA Time Zone Database
+   country: 'CC',                 // 2-letter ISO 3166-1 country code
+   region: 'RR',                  // Up to 3-character ISO 3166-2 subdivision code
+                                  // (e.g. 'NY' for New York, 'ENG' for England)
+   isEu: true,                    // true if the country is an EU member state
+   timezone: 'Country/Zone',      // IANA Time Zone Database identifier
    city: 'City name',             // Full city name
-   ll: [<latitude>, <longitude>], // Latitude and longitude of the city
-   metro: <metro code>,           // Metro code
-   area: <accuracy_radius>        // Approximate accuracy radius (km)
+   ll: [<latitude>, <longitude>], // Latitude and longitude of the city, or [null, null]
+   metro: <metro code>,           // Nielsen metro code (0 if unavailable)
+   area: <accuracy_radius>        // Approximate accuracy radius in km
 }
 ```
 
@@ -113,23 +120,19 @@ You will need, at minimum, a free license key obtained from [maxmind.com](https:
 
 The package stores checksums of MaxMind data and by default downloads them only if they have changed.
 
-### Ways to update data
+### Updating data
 ```shell
+# Standard update (skips if data unchanged)
 npm run updatedb license_key=YOUR_LICENSE_KEY
+
+# Force update regardless of checksum
 npm run updatedb-force license_key=YOUR_LICENSE_KEY
 ```
 
-You can also run:
-```shell
-node ./node_modules/geoip-lite2/tools/updatedb.js license_key=YOUR_LICENSE_KEY
-```
-
-### Ways to reload data in your app when update finished
-If you have a server running `geoip-lite2`, and you want to reload its geo data, after you finished update, without a restart.
+### Reloading data at runtime
+If you have a server running `geoip-lite2` and you want to reload its geo data after an update without a restart:
 
 #### Programmatically
-You can do it programmatically, calling after scheduled data updates
-
 ```js
 // Synchronously
 geoIp.reloadDataSync();
@@ -143,24 +146,33 @@ geoIp.reloadData(() => {
 await geoIp.reloadData();
 ```
 
-#### Automatic Start and stop watching for data updates
-You can enable the data watcher to automatically refresh in-memory geo data when a file changes in the data directory.
+#### Automatic file watching
+You can enable the built-in file watcher to automatically refresh in-memory geo data whenever a file changes in the data directory:
 
 ```js
 geoIp.startWatchingDataUpdate();
+
+// Optional: receive errors from background reloads
+geoIp.startWatchingDataUpdate(err => {
+    if (err) console.error('[geoip-lite2] Reload failed:', err);
+});
+
+// Stop watching
+geoIp.stopWatchingDataUpdate();
 ```
 
-This tool can be used with `npm run updatedb` to periodically update geo data on a running server.
-
 #### Environment variables
-The following environment variables can be set.
+The following environment variables are supported:
 
 ```bash
-# Override the default node_modules/geoip-lite2/data dir
-GEODATADIR=/some/path
+# MaxMind license key (alternative to the license_key= argument)
+MAXMIND_KEY=your_license_key
 
-# Override the default node_modules/geoip-lite2/tmp dir
-GEOTMPDIR=/some/path
+# Override the default data directory (default: node_modules/geoip-lite2/data)
+GEOIP_DATA_DIR=/some/path
+
+# Override the default temporary directory used during updates
+GEOIP_TMP_DIR=/some/path
 ```
 
 
@@ -182,13 +194,13 @@ console.log(process.memoryUsage());
 /**
  * Output:
  * {
- * rss: 234938368,
- * heapTotal: 7376896,
- * heapUsed: 4486592,
- * external: 189088547,
- * arrayBuffers: 187514427
+ *   rss: 234938368,
+ *   heapTotal: 7376896,
+ *   heapUsed: 4486592,
+ *   external: 189088547,
+ *   arrayBuffers: 187514427
  * }
-**/
+ */
 ```
 
 
@@ -199,7 +211,8 @@ console.log(process.memoryUsage());
 
 
 ## 👥 Copyright
-`GeoIP-Lite` © 2011-2018 **Philip Tellis** <philip@bluesmoon.info>
+`GeoIP-Lite` © 2011–2018 **Philip Tellis** <philip@bluesmoon.info>  
+`GeoIP-Lite2` © 2023–present **Sefinek** <contact@sefinek.net>
 
 
 ## 🔐 License
