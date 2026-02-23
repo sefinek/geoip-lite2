@@ -139,7 +139,7 @@ geoIp.reloadDataSync();
 
 // Asynchronously (callback)
 geoIp.reloadData(() => {
-    console.log('Done');
+    console.log('[geoip-lite2] Done');
 });
 
 // Asynchronously (Promise)
