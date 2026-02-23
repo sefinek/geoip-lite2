@@ -175,6 +175,25 @@ GEOIP_DATA_DIR=/some/path
 GEOIP_TMP_DIR=/some/path
 ```
 
+Alternatively, you can set the data directory programmatically before requiring the module:
+
+```js
+globalThis['geoDataDir'] = '/some/path';
+const geoIp = require('geoip-lite2');
+```
+
+### Clearing in-memory data
+
+`clear()` releases all in-memory GeoIP buffers. Subsequent lookups return `null` until data is reloaded.
+
+```js
+geoIp.clear();
+// all lookups return null now
+
+geoIp.reloadDataSync();
+// data restored
+```
+
 
 ## ⚠️ Caveats
 This package includes the GeoLite database from MaxMind. It is not the most accurate database available,
