@@ -55,9 +55,7 @@ const makeFsWatchFilter = (name, directory, filename, cdDelay, callback) => {
 		watchState.cdId = setTimeout(timeoutCallback, cooldown);
 	};
 
-	if (FSWatcher[name]) {
-		stopWatching(name);
-	}
+	if (FSWatcher[name]) stopWatching(name);
 
 	watchState.watcher = watch(directory, onWatchEvent);
 	watchState.watcher.on('error', err => {

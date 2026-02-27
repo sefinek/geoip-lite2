@@ -230,8 +230,8 @@ console.log(process.memoryUsage());
 
 
 ## 👥 Copyright
-`GeoIP-Lite` © 2011–2018 **Philip Tellis** <philip@bluesmoon.info>  
 `GeoIP-Lite2` © 2023–present **Sefinek** <contact@sefinek.net>
+`GeoIP-Lite` © 2011–2018 **Philip Tellis** <philip@bluesmoon.info>  
 
 
 ## 🔐 License

@@ -6,32 +6,28 @@ const { aton4, aton6, cmp6, removeNullTerminator, readIp6, createGeoData, popula
 const fsWatcher = require('./scripts/fsWatcher.js');
 const { version } = require('./package.json');
 
-const watcherName = 'dataWatcher';
-const reportReloadError = err => {
-	if (err) console.error('[geoip-lite2] Failed to reload GeoIP data:', err);
+const WATCHER_NAME = 'dataWatcher';
+
+const GEO_DATA_DIR = resolve(__dirname, globalThis['geoDataDir'] || process.env.GEOIP_DATA_DIR || './data/');
+const DATA_FILES = {
+	city: join(GEO_DATA_DIR, 'geoip-city.dat'),
+	city6: join(GEO_DATA_DIR, 'geoip-city6.dat'),
+	cityNames: join(GEO_DATA_DIR, 'geoip-city-names.dat'),
+	country: join(GEO_DATA_DIR, 'geoip-country.dat'),
+	country6: join(GEO_DATA_DIR, 'geoip-country6.dat'),
 };
+const WATCHED_DATA_FILES = Object.values(DATA_FILES).map(filePath => basename(filePath));
 
-const geoDataDir = resolve(
-	__dirname,
-	globalThis['geoDataDir'] || process.env.GEOIP_DATA_DIR || './data/'
-);
-
-const dataFiles = {
-	city: join(geoDataDir, 'geoip-city.dat'),
-	city6: join(geoDataDir, 'geoip-city6.dat'),
-	cityNames: join(geoDataDir, 'geoip-city-names.dat'),
-	country: join(geoDataDir, 'geoip-country.dat'),
-	country6: join(geoDataDir, 'geoip-country6.dat'),
-};
-const watchedDataFiles = Object.values(dataFiles).map(filePath => basename(filePath));
-
-const privateRange4 = [
+const PRIVATE_RANGE4 = [
 	[aton4('10.0.0.0'), aton4('10.255.255.255')],
 	[aton4('172.16.0.0'), aton4('172.31.255.255')],
 	[aton4('192.168.0.0'), aton4('192.168.255.255')],
 ];
 
-const conf4 = {
+const RECORD_SIZE = 10;
+const RECORD_SIZE6 = 34;
+
+const CONF4 = {
 	firstIP: null,
 	lastIP: null,
 	lastRecordIdx: 0,
@@ -41,7 +37,7 @@ const conf4 = {
 	recordSize: 24,
 };
 
-const conf6 = {
+const CONF6 = {
 	firstIP: null,
 	lastIP: null,
 	lastRecordIdx: 0,
@@ -49,11 +45,10 @@ const conf6 = {
 	recordSize: 48,
 };
 
-let cache4 = { ...conf4 };
-let cache6 = { ...conf6 };
+let cache4 = { ...CONF4 };
+let cache6 = { ...CONF6 };
 
-const RECORD_SIZE = 10;
-const RECORD_SIZE6 = 34;
+const reportReloadError = err => err ? console.error('[geoip-lite2] Failed to reload GeoIP data:', err) : null;
 
 const lookup4 = ip => {
 	if (!cache4.mainBuffer) return null;
@@ -66,7 +61,7 @@ const lookup4 = ip => {
 
 	const buffer = cache4.mainBuffer;
 	const locBuffer = cache4.locationBuffer;
-	const privateRange = privateRange4;
+	const privateRange = PRIVATE_RANGE4;
 	const recordSize = cache4.recordSize;
 	const locRecordSize = cache4.locationRecordSize;
 
@@ -191,11 +186,11 @@ const readFileBuffer = async filePath => {
 const isExpectedMissingDataError = err => err?.code === 'ENOENT' || err?.code === 'EBADF';
 
 const preloadAsync = async () => {
-	const asyncCache = { ...conf4 };
+	const asyncCache = { ...CONF4 };
 	let mainData;
 
 	try {
-		const cityNamesData = await readFileBuffer(dataFiles.cityNames);
+		const cityNamesData = await readFileBuffer(DATA_FILES.cityNames);
 		if (cityNamesData.size === 0) {
 			const emptyFileError = new Error('geoip-city-names.dat is empty');
 			emptyFileError.code = 'ENOENT';
@@ -203,11 +198,11 @@ const preloadAsync = async () => {
 		}
 
 		asyncCache.locationBuffer = cityNamesData.buffer;
-		mainData = await readFileBuffer(dataFiles.city);
+		mainData = await readFileBuffer(DATA_FILES.city);
 	} catch (err) {
 		if (!isExpectedMissingDataError(err)) throw err;
 		asyncCache.locationBuffer = null;
-		mainData = await readFileBuffer(dataFiles.country);
+		mainData = await readFileBuffer(DATA_FILES.country);
 		asyncCache.recordSize = RECORD_SIZE;
 	}
 
@@ -219,54 +214,50 @@ const preloadAsync = async () => {
 };
 
 const preload = callback => {
-	if (typeof callback === 'function') {
-		preloadAsync().then(() => callback()).catch(callback);
-	} else {
-		let datFile;
-		let datSize;
-		try {
-			datFile = openSync(dataFiles.cityNames, 'r');
-			datSize = fstatSync(datFile).size;
-			if (datSize === 0) {
-				closeSync(datFile);
-				datFile = openSync(dataFiles.country, 'r');
-				datSize = fstatSync(datFile).size;
-				cache4.recordSize = RECORD_SIZE;
-			} else {
-				cache4.locationBuffer = Buffer.alloc(datSize);
-				readSync(datFile, cache4.locationBuffer, 0, datSize, 0);
-				closeSync(datFile);
+	if (typeof callback === 'function') return preloadAsync().then(() => callback()).catch(callback);
 
-				datFile = openSync(dataFiles.city, 'r');
-				datSize = fstatSync(datFile).size;
-			}
-		} catch (err) {
-			if (err.code !== 'ENOENT' && err.code !== 'EBADF') {
-				throw err;
-			}
-
-			cache4.locationBuffer = null;
-			datFile = openSync(dataFiles.country, 'r');
+	let datFile;
+	let datSize;
+	try {
+		datFile = openSync(DATA_FILES.cityNames, 'r');
+		datSize = fstatSync(datFile).size;
+		if (datSize === 0) {
+			closeSync(datFile);
+			datFile = openSync(DATA_FILES.country, 'r');
 			datSize = fstatSync(datFile).size;
 			cache4.recordSize = RECORD_SIZE;
+		} else {
+			cache4.locationBuffer = Buffer.alloc(datSize);
+			readSync(datFile, cache4.locationBuffer, 0, datSize, 0);
+			closeSync(datFile);
+
+			datFile = openSync(DATA_FILES.city, 'r');
+			datSize = fstatSync(datFile).size;
 		}
+	} catch (err) {
+		if (err.code !== 'ENOENT' && err.code !== 'EBADF') throw err;
 
-		cache4.mainBuffer = Buffer.alloc(datSize);
-		readSync(datFile, cache4.mainBuffer, 0, datSize, 0);
-		closeSync(datFile);
-
-		cache4.lastRecordIdx = (datSize / cache4.recordSize) - 1;
-		cache4.lastIP = cache4.mainBuffer.readUInt32BE((cache4.lastRecordIdx * cache4.recordSize) + 4);
-		cache4.firstIP = cache4.mainBuffer.readUInt32BE(0);
+		cache4.locationBuffer = null;
+		datFile = openSync(DATA_FILES.country, 'r');
+		datSize = fstatSync(datFile).size;
+		cache4.recordSize = RECORD_SIZE;
 	}
+
+	cache4.mainBuffer = Buffer.alloc(datSize);
+	readSync(datFile, cache4.mainBuffer, 0, datSize, 0);
+	closeSync(datFile);
+
+	cache4.lastRecordIdx = (datSize / cache4.recordSize) - 1;
+	cache4.lastIP = cache4.mainBuffer.readUInt32BE((cache4.lastRecordIdx * cache4.recordSize) + 4);
+	cache4.firstIP = cache4.mainBuffer.readUInt32BE(0);
 };
 
 const preload6Async = async () => {
-	const asyncCache6 = { ...conf6 };
+	const asyncCache6 = { ...CONF6 };
 	let mainData;
 
 	try {
-		const cityData = await readFileBuffer(dataFiles.city6);
+		const cityData = await readFileBuffer(DATA_FILES.city6);
 		if (cityData.size === 0) {
 			const emptyFileError = new Error('geoip-city6.dat is empty');
 			emptyFileError.code = 'ENOENT';
@@ -276,7 +267,7 @@ const preload6Async = async () => {
 		mainData = cityData;
 	} catch (err) {
 		if (!isExpectedMissingDataError(err)) throw err;
-		mainData = await readFileBuffer(dataFiles.country6);
+		mainData = await readFileBuffer(DATA_FILES.country6);
 		asyncCache6.recordSize = RECORD_SIZE6;
 	}
 
@@ -288,39 +279,36 @@ const preload6Async = async () => {
 };
 
 const preload6 = callback => {
-	if (typeof callback === 'function') {
-		preload6Async().then(() => callback()).catch(callback);
-	} else {
-		let datFile;
-		let datSize;
-		try {
-			datFile = openSync(dataFiles.city6, 'r');
-			datSize = fstatSync(datFile).size;
+	if (typeof callback === 'function') return preload6Async().then(() => callback()).catch(callback);
 
-			if (datSize === 0) {
-				closeSync(datFile);
-				datFile = openSync(dataFiles.country6, 'r');
-				datSize = fstatSync(datFile).size;
-				cache6.recordSize = RECORD_SIZE6;
-			}
-		} catch (err) {
-			if (err.code !== 'ENOENT' && err.code !== 'EBADF') {
-				throw err;
-			}
+	let datFile, datSize;
+	try {
+		datFile = openSync(DATA_FILES.city6, 'r');
+		datSize = fstatSync(datFile).size;
 
-			datFile = openSync(dataFiles.country6, 'r');
+		if (datSize === 0) {
+			closeSync(datFile);
+			datFile = openSync(DATA_FILES.country6, 'r');
 			datSize = fstatSync(datFile).size;
 			cache6.recordSize = RECORD_SIZE6;
 		}
+	} catch (err) {
+		if (err.code !== 'ENOENT' && err.code !== 'EBADF') {
+			throw err;
+		}
 
-		cache6.mainBuffer = Buffer.alloc(datSize);
-		readSync(datFile, cache6.mainBuffer, 0, datSize, 0);
-		closeSync(datFile);
-
-		cache6.lastRecordIdx = (datSize / cache6.recordSize) - 1;
-		cache6.lastIP = readIp6(cache6.mainBuffer, cache6.lastRecordIdx, cache6.recordSize, 1);
-		cache6.firstIP = readIp6(cache6.mainBuffer, 0, cache6.recordSize, 0);
+		datFile = openSync(DATA_FILES.country6, 'r');
+		datSize = fstatSync(datFile).size;
+		cache6.recordSize = RECORD_SIZE6;
 	}
+
+	cache6.mainBuffer = Buffer.alloc(datSize);
+	readSync(datFile, cache6.mainBuffer, 0, datSize, 0);
+	closeSync(datFile);
+
+	cache6.lastRecordIdx = (datSize / cache6.recordSize) - 1;
+	cache6.lastIP = readIp6(cache6.mainBuffer, cache6.lastRecordIdx, cache6.recordSize, 1);
+	cache6.firstIP = readIp6(cache6.mainBuffer, 0, cache6.recordSize, 0);
 };
 
 const runAsyncReload = callback => {
@@ -352,7 +340,7 @@ module.exports = {
 		return null;
 	},
 	startWatchingDataUpdate: callback => {
-		fsWatcher.makeFsWatchFilter(watcherName, geoDataDir, watchedDataFiles, 60 * 1000, change => {
+		fsWatcher.makeFsWatchFilter(WATCHER_NAME, GEO_DATA_DIR, WATCHED_DATA_FILES, 60 * 1000, change => {
 			if (change?.file) {
 				console.log(`[geoip-lite2] Detected change in "${change.file}", reloading data...`);
 			} else {
@@ -366,14 +354,14 @@ module.exports = {
 			}
 		});
 	},
-	stopWatchingDataUpdate: () => fsWatcher.stopWatching(watcherName),
+	stopWatchingDataUpdate: () => fsWatcher.stopWatching(WATCHER_NAME),
 	clear: () => {
-		cache4 = { ...conf4 };
-		cache6 = { ...conf6 };
+		cache4 = { ...CONF4 };
+		cache6 = { ...CONF6 };
 	},
 	reloadDataSync: () => {
-		preload();
-		preload6();
+		void preload();
+		void preload6();
 	},
 	reloadData: callback => {
 		if (typeof callback === 'function') {
@@ -392,5 +380,5 @@ module.exports = {
 	version,
 };
 
-preload();
-preload6();
+void preload();
+void preload6();
