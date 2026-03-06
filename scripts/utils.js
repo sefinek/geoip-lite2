@@ -38,9 +38,7 @@ const ipv4ToUint32Strict = ip => {
 
 	for (let i = 0; i < octets.length; i++) {
 		const octet = Number.parseInt(octets[i], 10);
-		if (!Number.isInteger(octet) || octet < 0 || octet > 255) {
-			throw new TypeError(`Invalid IPv4 address: ${ip}`);
-		}
+		if (!Number.isInteger(octet) || octet < 0 || octet > 255) throw new TypeError(`Invalid IPv4 address: ${ip}`);
 	}
 
 	return aton4(ip);

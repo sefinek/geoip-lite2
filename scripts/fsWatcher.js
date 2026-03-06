@@ -31,10 +31,12 @@ const makeFsWatchFilter = (name, directory, filename, cdDelay, callback) => {
 	const watchFiles = Array.isArray(filename)
 		? new Set(filename)
 		: (typeof filename === 'string' ? new Set([filename]) : null);
+
 	const timeoutCallback = () => {
 		watchState.cdId = null;
 		callback(watchState.lastChange);
 	};
+
 	const onWatchEvent = (event, changedFile) => {
 		const changedFileName = Buffer.isBuffer(changedFile)
 			? changedFile.toString()

@@ -1,5 +1,3 @@
-'use strict';
-
 const { name, version } = require('../package.json');
 const UserAgent = `Mozilla/5.0 (compatible; ${name}/${version}; +https://github.com/sefinek/geoip-lite2)`;
 

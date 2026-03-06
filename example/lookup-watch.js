@@ -5,6 +5,7 @@ geoIp.startWatchingDataUpdate(err => {
 		console.error('[geoip-lite2] GeoIP reload failed:', err);
 		return;
 	}
+
 	console.log('[geoip-lite2] Reloaded GeoIP database');
 });
 
