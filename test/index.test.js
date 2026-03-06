@@ -45,10 +45,10 @@ describe('GeoIP2', () => {
 			expect(actual.country).toBe('JP');
 			expect(actual.isEu).toBe(false);
 			expect(actual.timezone).toBe('Asia/Tokyo');
-			expect(actual.city).toBe('');
+			expect(actual.city).toBe('Kofu');
 			expect(actual.ll).toBeTruthy();
 			expect(actual.metro).toBe(0);
-			expect(actual.area).toBe(500);
+			expect(actual.area).toBe(200);
 		});
 
 		it('should match data for IPv4 - RU', () => {
@@ -60,7 +60,7 @@ describe('GeoIP2', () => {
 			expect(actual.city).toBe('Ivanovo');
 			expect(actual.ll).toBeTruthy();
 			expect(actual.metro).toBe(0);
-			expect(actual.area).toBe(10);
+			expect(actual.area).toBe(5);
 		});
 	});
 
