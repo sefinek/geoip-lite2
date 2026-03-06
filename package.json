@@ -1,6 +1,6 @@
 {
   "name": "geoip-lite2",
-  "version": "4.0.0-alpha.1",
+  "version": "4.0.0-alpha.2",
   "description": "Fast, native implementation of the GeoIP API from MaxMind in JavaScript. An improved version by Sefinek, continuously maintained.",
   "keywords": [
     "geoip",
@@ -78,7 +78,7 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@jest/globals": "^30.2.0",
-    "globals": "^17.3.0",
+    "globals": "^17.4.0",
     "jest": "^30.2.0"
   },
   "engines": {
