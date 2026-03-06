@@ -154,7 +154,7 @@ geoIp.startWatchingDataUpdate();
 
 // Optional: receive errors from background reloads
 geoIp.startWatchingDataUpdate(err => {
-    if (err) console.error('[geoip-lite2] Reload failed:', err);
+    if (err) console.error('[geoip-lite2] GeoIP reload failed:', err);
 });
 
 // Stop watching
