@@ -52,7 +52,7 @@ MAXMIND_KEY=YOUR_LICENSE_KEY node node_modules/geoip-lite2/tools/updatedb.js
 ```js
 const geoIp = require('geoip-lite2');
 
-const ip = '146.19.109.255';
+const ip = '79.186.130.100';
 console.log(geoIp.lookup(ip));
 ```
 
@@ -60,13 +60,13 @@ console.log(geoIp.lookup(ip));
 ```json
 {
   "country": "PL",
-  "region": "14",
+  "region": "32",
   "isEu": true,
   "timezone": "Europe/Warsaw",
-  "city": "Warsaw",
-  "ll": [ 52.2296, 21.0067 ],
+  "city": "Szczecin",
+  "ll": [ 53.4118, 14.5339 ],
   "metro": 0,
-  "area": 20
+  "area": 200
 }
 ```
 
