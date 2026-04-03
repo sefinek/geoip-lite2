@@ -1,0 +1,74 @@
+{
+  "name": "geoip-lite2",
+  "version": "4.0.1-alpha.1",
+  "description": "Fast, native implementation of the GeoIP API from MaxMind in JavaScript. An improved version by Sefinek, continuously maintained.",
+  "keywords": [
+    "geoip",
+    "geoip2",
+    "geolocation",
+    "ip",
+    "ip-lookup",
+    "ip-geolocation",
+    "ipv4",
+    "ipv6",
+    "maxmind",
+    "geolite2",
+    "geolite",
+    "country",
+    "city",
+    "region",
+    "nodejs",
+    "javascript"
+  ],
+  "homepage": "https://github.com/sefinek/geoip-lite2#readme",
+  "bugs": {
+    "url": "https://github.com/sefinek/geoip-lite2/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sefinek/geoip-lite2.git"
+  },
+  "license": "(Apache-2.0 AND CC-BY-SA-4.0)",
+  "author": "Sefinek <contact@sefinek.net> (https://sefinek.net)",
+  "type": "commonjs",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "directories": {
+    "example": "example",
+    "test": "test"
+  },
+  "files": [
+    "data",
+    "example",
+    "tools",
+    "AUTHORS",
+    "scripts",
+    "index.d.ts",
+    "index.js",
+    "LICENSE",
+    "README.md"
+  ],
+  "scripts": {
+    "example": "node example/lookup-watch.js",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "m": "ncu -u && npm install && npm update",
+    "test": "jest test",
+    "updatedb": "node tools/updatedb.js",
+    "updatedb-debug": "node tools/updatedb.js debug",
+    "updatedb-force": "node tools/updatedb.js force"
+  },
+  "dependencies": {
+    "adm-zip": "^0.5.17",
+    "https-proxy-agent": "^9.0.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@jest/globals": "^30.3.0",
+    "globals": "^17.4.0",
+    "jest": "^30.3.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

@@ -1,0 +1,271 @@
+const { describe, expect, it } = require('@jest/globals');
+const geoIp = require('../index.js');
+
+describe('GeoIP2', () => {
+	describe('#testLookup', () => {
+		it('should return data about IPv4', () => {
+			const ip = '1.1.1.1';
+			const actual = geoIp.lookup(ip);
+			expect(actual).toBeTruthy();
+		});
+
+		it('should return data about IPv6', () => {
+			const actual = geoIp.lookup('2606:4700:4700::64');
+			expect(actual).toBeTruthy();
+		});
+	});
+
+	describe('#testDataIP4', () => {
+		it('should match data for IPv4 - PL', () => {
+			const actual = geoIp.lookup('83.13.246.1');
+			expect(actual.country).toBe('PL');
+			expect(actual.region).toBe('14');
+			expect(actual.isEu).toBe(true);
+			expect(actual.timezone).toBe('Europe/Warsaw');
+			expect(actual.city).toBe('Piaseczno');
+			expect(actual.ll).toBeTruthy();
+			expect(actual.metro).toBe(0);
+			expect(actual.area).toBe(10);
+		});
+
+		it('should match data for IPv4 - US', () => {
+			const actual = geoIp.lookup('72.229.28.185');
+			expect(actual.country).toBe('US');
+			expect(actual.region).toBe('NY');
+			expect(actual.isEu).toBe(false);
+			expect(actual.timezone).toBe('America/New_York');
+			expect(actual.city).toBe('New York');
+			expect(actual.ll).toBeTruthy();
+			expect(actual.metro).toBe(501);
+			expect(actual.area).toBe(20);
+		});
+
+		it('should match data for IPv4 - JP', () => {
+			const actual = geoIp.lookup('210.138.184.59');
+			expect(actual.country).toBe('JP');
+			expect(actual.isEu).toBe(false);
+			expect(actual.timezone).toBe('Asia/Tokyo');
+			expect(actual.city).toBe('');
+			expect(actual.ll).toBeTruthy();
+			expect(actual.metro).toBe(0);
+			expect(actual.area).toBe(200);
+		});
+
+		it('should match data for IPv4 - RU', () => {
+			const actual = geoIp.lookup('109.108.63.255');
+			expect(actual.country).toBe('RU');
+			expect(actual.region).toBe('IVA');
+			expect(actual.isEu).toBe(false);
+			expect(actual.timezone).toBe('Europe/Moscow');
+			expect(actual.city).toBe('Ivanovo');
+			expect(actual.ll).toBeTruthy();
+			expect(actual.metro).toBe(0);
+			expect(actual.area).toBe(5);
+		});
+	});
+
+	describe('#testDataIP6', () => {
+		it('should match data for IPv6 - PL', () => {
+			const actual = geoIp.lookup('2a01:118f:30a:3900:c954:e6ef:8067:d4e8');
+			expect(actual.country).toBe('PL');
+			expect(actual.region).toBe('06');
+			expect(actual.isEu).toBe(true);
+			expect(actual.timezone).toBe('Europe/Warsaw');
+			expect(actual.city).toBe('Miączyn');
+			expect(actual.ll).toBeTruthy();
+			expect(actual.metro).toBe(0);
+			expect(actual.area).toBe(100);
+		});
+
+		it('should match data for IPv6 - NL ', () => {
+			const actual = geoIp.lookup('2001:1c04:400::1');
+			expect(actual.country).toBe('NL');
+			expect(actual.region).toBe('NH');
+			expect(actual.isEu).toBe(true);
+			expect(actual.timezone).toBe('Europe/Amsterdam');
+			expect(actual.city).toBe('Zandvoort');
+			expect(actual.ll).toBeTruthy();
+			expect(actual.metro).toBe(0);
+			expect(actual.area).toBe(5);
+		});
+
+		it('should match data for IPv6 - JP', () => {
+			const actual = geoIp.lookup('2400:8500:1302:814:a163:44:173:238f');
+			expect(actual.country).toBe('JP');
+			expect(actual.region).toBe('');
+			expect(actual.isEu).toBe(false);
+			expect(actual.timezone).toBe('Asia/Tokyo');
+			expect(actual.city).toBe('');
+			expect(actual.ll).toBeTruthy();
+			expect(actual.metro).toBe(0);
+			expect(actual.area).toBe(500);
+		});
+	});
+
+	describe('#testUTF8', () => {
+		it('should return UTF8 city name', () => {
+			const actual = geoIp.lookup('2.139.175.1');
+			expect(actual.country).toBe('ES');
+			expect(actual.city).toBe('Barcelona');
+			expect(actual.timezone).toBe('Europe/Madrid');
+		});
+
+		it('should match data for IPv4 - PL', () => {
+			const actual = geoIp.lookup('86.63.89.41');
+			expect(actual.country).toBe('PL');
+			expect(actual.timezone).toBe('Europe/Warsaw');
+			expect(actual.city).toBe('Piła');
+		});
+	});
+
+	describe('#testMetro', () => {
+		it('should match metro data', () => {
+			const actual = geoIp.lookup('23.240.63.68');
+			expect(actual.metro).toBe(803);
+		});
+	});
+
+	describe('#testIPv4MappedIPv6', () => {
+		it('should match IPv4 mapped IPv6 data', () => {
+			const actual = geoIp.lookup('195.16.170.74');
+			expect(actual.metro).toBe(0);
+		});
+	});
+
+	describe('#testSyncReload', () => {
+		it('should reload data synchronously', () => {
+			const before4 = geoIp.lookup('75.82.117.180');
+			expect(before4).not.toBeNull();
+			const before6 = geoIp.lookup('::ffff:173.185.182.82');
+			expect(before6).not.toBeNull();
+
+			geoIp.clear();
+
+			const none4 = geoIp.lookup('75.82.117.180');
+			expect(none4).toBeNull();
+			const none6 = geoIp.lookup('::ffff:173.185.182.82');
+			expect(none6).toBeNull();
+
+			geoIp.reloadDataSync();
+
+			const after4 = geoIp.lookup('75.82.117.180');
+			expect(before4).toEqual(after4);
+			const after6 = geoIp.lookup('::ffff:173.185.182.82');
+			expect(before6).toEqual(after6);
+		});
+
+		it('should return null for 0.0.0.0 after clear()', () => {
+			geoIp.clear();
+			expect(geoIp.lookup('0.0.0.0')).toBeNull();
+			geoIp.reloadDataSync();
+		});
+
+		it('should return null for native IPv6 after clear()', () => {
+			geoIp.clear();
+			expect(geoIp.lookup('2001:4860:4860::8888')).toBeNull();
+			expect(geoIp.lookup('::1')).toBeNull();
+			geoIp.reloadDataSync();
+		});
+	});
+
+	describe('#testAsyncReload', () => {
+		it('should reload data asynchronously', (done) => {
+			const before4 = geoIp.lookup('75.82.117.180');
+			expect(before4).not.toBeNull();
+			const before6 = geoIp.lookup('::ffff:173.185.182.82');
+			expect(before6).not.toBeNull();
+
+			geoIp.clear();
+
+			const none4 = geoIp.lookup('75.82.117.180');
+			expect(none4).toBeNull();
+			const none6 = geoIp.lookup('::ffff:173.185.182.82');
+			expect(none6).toBeNull();
+
+			const result = geoIp.reloadData(() => {
+				const after4 = geoIp.lookup('75.82.117.180');
+				expect(before4).toEqual(after4);
+				const after6 = geoIp.lookup('::ffff:173.185.182.82');
+				expect(before6).toEqual(after6);
+
+				done();
+			});
+
+			expect(result).toBeUndefined();
+		});
+
+		it('should reload data and resolve a promise when callback is omitted', async () => {
+			const before4 = geoIp.lookup('75.82.117.180');
+			expect(before4).not.toBeNull();
+			const before6 = geoIp.lookup('::ffff:173.185.182.82');
+			expect(before6).not.toBeNull();
+
+			geoIp.clear();
+
+			expect(geoIp.lookup('75.82.117.180')).toBeNull();
+			expect(geoIp.lookup('::ffff:173.185.182.82')).toBeNull();
+
+			const result = geoIp.reloadData();
+			expect(result).toBeDefined();
+			expect(typeof result.then).toBe('function');
+
+			await result;
+
+			const after4 = geoIp.lookup('75.82.117.180');
+			expect(before4).toEqual(after4);
+			const after6 = geoIp.lookup('::ffff:173.185.182.82');
+			expect(before6).toEqual(after6);
+		});
+	});
+
+	describe('#testWatcherLifecycle', () => {
+		it('should not throw when stopping watcher before it starts', () => {
+			expect(() => geoIp.stopWatchingDataUpdate()).not.toThrow();
+		});
+	});
+
+	describe('#testInvalidIP', () => {
+		it('should return null for an invalid IP address', () => {
+			const ip = 'invalid_ip_address';
+			const actual = geoIp.lookup(ip);
+			expect(actual).toBeNull();
+		});
+	});
+
+	describe('#testEmptyIP', () => {
+		it('should return null for an empty IP address', () => {
+			const actual = geoIp.lookup('');
+			expect(actual).toBeNull();
+		});
+	});
+
+	describe('#testNullIP', () => {
+		it('should throw for a null IP address', () => {
+			expect(() => geoIp.lookup(null)).toThrow(TypeError);
+		});
+	});
+
+	describe('#testUnknownIP', () => {
+		it('should return null for an unknown IP address', () => {
+			const ip = '192.168.0.1'; // Private IP address
+			const actual = geoIp.lookup(ip);
+			expect(actual).toBeNull();
+		});
+	});
+
+	describe('#testNoDataForIP', () => {
+		it('should return null for an IP address with no data', () => {
+			const ip = '203.0.113.0'; // Example IP with no data
+			const actual = geoIp.lookup(ip);
+			expect(actual).toBeNull();
+		});
+	});
+
+	describe('#testSpecialCharactersIP', () => {
+		it('should return null for an IP address with special characters', () => {
+			const ip = '20.24.@.&'; // IP with special characters
+			const actual = geoIp.lookup(ip);
+			expect(actual).toBeNull();
+		});
+	});
+});
