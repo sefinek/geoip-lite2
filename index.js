@@ -8,7 +8,7 @@ const { version } = require('./package.json');
 
 const WATCHER_NAME = 'dataWatcher';
 
-const GEO_DATA_DIR = resolve(__dirname, globalThis['geoDataDir'] || process.env.GEOIP_DATA_DIR || './data/');
+const GEO_DATA_DIR = resolve(__dirname, globalThis.geoDataDir || process.env.GEOIP_DATA_DIR || './data/');
 const DATA_FILES = {
 	city: join(GEO_DATA_DIR, 'geoip-city.dat'),
 	city6: join(GEO_DATA_DIR, 'geoip-city6.dat'),
@@ -53,36 +53,31 @@ const reportReloadError = err => err ? console.error('[geoip-lite2] Failed to re
 const lookup4 = ip => {
 	if (!cache4.mainBuffer) return null;
 
-	let fline = 0;
-	let cline = cache4.lastRecordIdx;
-	let floor;
-	let ceil;
-	let line, locId;
-
 	const buffer = cache4.mainBuffer;
 	const locBuffer = cache4.locationBuffer;
-	const privateRange = PRIVATE_RANGE4;
 	const recordSize = cache4.recordSize;
 	const locRecordSize = cache4.locationRecordSize;
 
 	if (ip > cache4.lastIP || ip < cache4.firstIP) return null;
-	for (let i = 0; i < privateRange.length; i++) {
-		if (ip >= privateRange[i][0] && ip <= privateRange[i][1]) return null;
+	for (let i = 0; i < PRIVATE_RANGE4.length; i++) {
+		if (ip >= PRIVATE_RANGE4[i][0] && ip <= PRIVATE_RANGE4[i][1]) return null;
 	}
 
 	const geoData = createGeoData();
+	let fline = 0;
+	let cline = cache4.lastRecordIdx;
 
 	while (true) {
-		line = Math.round((cline - fline) / 2) + fline;
+		const line = (fline + cline) >>> 1;
 		const offset = line * recordSize;
-		floor = buffer.readUInt32BE(offset);
-		ceil = buffer.readUInt32BE(offset + 4);
+		const floor = buffer.readUInt32BE(offset);
+		const ceil = buffer.readUInt32BE(offset + 4);
 
 		if (floor <= ip && ceil >= ip) {
 			if (recordSize === RECORD_SIZE) {
 				geoData.country = removeNullTerminator(buffer.toString('utf8', offset + 8, offset + 10));
 			} else {
-				locId = buffer.readUInt32BE(offset + 8);
+				const locId = buffer.readUInt32BE(offset + 8);
 				populateGeoDataFromLocation({
 					geoData,
 					locationBuffer: locBuffer,
@@ -98,15 +93,11 @@ const lookup4 = ip => {
 			return geoData;
 		} else if (fline === cline) {
 			return null;
-		} else if (fline === (cline - 1)) {
-			if (line === fline) {
-				fline = cline;
-			} else {
-				cline = fline;
-			}
+		} else if (fline === cline - 1) {
+			fline = cline;
 		} else if (floor > ip) {
 			cline = line;
-		} else if (ceil < ip) {
+		} else {
 			fline = line;
 		}
 	}
@@ -120,27 +111,25 @@ const lookup6 = ip => {
 	const locBuffer = cache4.locationBuffer;
 	const locRecordSize = cache4.locationRecordSize;
 
-	let fline = 0;
-	let cline = cache6.lastRecordIdx;
-	let floor;
-	let ceil;
-	let line, locId;
-
 	if (cmp6(ip, cache6.lastIP) > 0 || cmp6(ip, cache6.firstIP) < 0) return null;
 
 	const geoData = createGeoData();
+	let fline = 0;
+	let cline = cache6.lastRecordIdx;
 
 	while (true) {
-		line = Math.round((cline - fline) / 2) + fline;
-		floor = readIp6(buffer, line, recordSize, 0);
-		ceil = readIp6(buffer, line, recordSize, 1);
+		const line = (fline + cline) >>> 1;
+		const floor = readIp6(buffer, line, recordSize, 0);
+		const ceil = readIp6(buffer, line, recordSize, 1);
+		const floorCmp = cmp6(floor, ip);
+		const ceilCmp = cmp6(ceil, ip);
 
-		if (cmp6(floor, ip) <= 0 && cmp6(ceil, ip) >= 0) {
+		if (floorCmp <= 0 && ceilCmp >= 0) {
 			const offset = line * recordSize;
 			if (recordSize === RECORD_SIZE6) {
 				geoData.country = removeNullTerminator(buffer.toString('utf8', offset + 32, offset + 34));
 			} else {
-				locId = buffer.readUInt32BE(offset + 32);
+				const locId = buffer.readUInt32BE(offset + 32);
 				populateGeoDataFromLocation({
 					geoData,
 					locationBuffer: locBuffer,
@@ -155,15 +144,11 @@ const lookup6 = ip => {
 			return geoData;
 		} else if (fline === cline) {
 			return null;
-		} else if (fline === (cline - 1)) {
-			if (line === fline) {
-				fline = cline;
-			} else {
-				cline = fline;
-			}
-		} else if (cmp6(floor, ip) > 0) {
+		} else if (fline === cline - 1) {
+			fline = cline;
+		} else if (floorCmp > 0) {
 			cline = line;
-		} else if (cmp6(ceil, ip) < 0) {
+		} else {
 			fline = line;
 		}
 	}
@@ -191,14 +176,13 @@ const preloadAsync = async () => {
 
 	try {
 		const cityNamesData = await readFileBuffer(DATA_FILES.cityNames);
-		if (cityNamesData.size === 0) {
-			const emptyFileError = new Error('geoip-city-names.dat is empty');
-			emptyFileError.code = 'ENOENT';
-			throw emptyFileError;
+		if (cityNamesData.size > 0) {
+			asyncCache.locationBuffer = cityNamesData.buffer;
+			mainData = await readFileBuffer(DATA_FILES.city);
+		} else {
+			mainData = await readFileBuffer(DATA_FILES.country);
+			asyncCache.recordSize = RECORD_SIZE;
 		}
-
-		asyncCache.locationBuffer = cityNamesData.buffer;
-		mainData = await readFileBuffer(DATA_FILES.city);
 	} catch (err) {
 		if (!isExpectedMissingDataError(err)) throw err;
 		asyncCache.locationBuffer = null;
@@ -226,6 +210,7 @@ const preload = callback => {
 			datFile = openSync(DATA_FILES.country, 'r');
 			datSize = fstatSync(datFile).size;
 			cache4.recordSize = RECORD_SIZE;
+			cache4.locationBuffer = null;
 		} else {
 			cache4.locationBuffer = Buffer.alloc(datSize);
 			readSync(datFile, cache4.locationBuffer, 0, datSize, 0);
@@ -258,13 +243,12 @@ const preload6Async = async () => {
 
 	try {
 		const cityData = await readFileBuffer(DATA_FILES.city6);
-		if (cityData.size === 0) {
-			const emptyFileError = new Error('geoip-city6.dat is empty');
-			emptyFileError.code = 'ENOENT';
-			throw emptyFileError;
+		if (cityData.size > 0) {
+			mainData = cityData;
+		} else {
+			mainData = await readFileBuffer(DATA_FILES.country6);
+			asyncCache6.recordSize = RECORD_SIZE6;
 		}
-
-		mainData = cityData;
 	} catch (err) {
 		if (!isExpectedMissingDataError(err)) throw err;
 		mainData = await readFileBuffer(DATA_FILES.country6);
@@ -321,7 +305,7 @@ module.exports = {
 	lookup: ip => {
 		if (ip === undefined || ip === null) throw new TypeError('lookup(ip) requires an IP address');
 		if (typeof ip === 'number') {
-			if (!Number.isFinite(ip) || !Number.isInteger(ip) || ip < 0) return null;
+			if (!Number.isFinite(ip) || !Number.isInteger(ip) || ip < 0 || ip > 0xFFFFFFFF) return null;
 			return lookup4(ip);
 		}
 

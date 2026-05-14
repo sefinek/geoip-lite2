@@ -22,10 +22,10 @@ describe('GeoIP2', () => {
 			expect(actual.region).toBe('14');
 			expect(actual.isEu).toBe(true);
 			expect(actual.timezone).toBe('Europe/Warsaw');
-			expect(actual.city).toBe('Piaseczno');
+			expect(actual.city).toBe('Warsaw');
 			expect(actual.ll).toBeTruthy();
 			expect(actual.metro).toBe(0);
-			expect(actual.area).toBe(10);
+			expect(actual.area).toBe(20);
 		});
 
 		it('should match data for IPv4 - US', () => {
@@ -37,18 +37,19 @@ describe('GeoIP2', () => {
 			expect(actual.city).toBe('New York');
 			expect(actual.ll).toBeTruthy();
 			expect(actual.metro).toBe(501);
-			expect(actual.area).toBe(20);
+			expect(actual.area).toBe(5);
 		});
 
 		it('should match data for IPv4 - JP', () => {
 			const actual = geoIp.lookup('210.138.184.59');
 			expect(actual.country).toBe('JP');
+			expect(actual.region).toBe('20');
 			expect(actual.isEu).toBe(false);
 			expect(actual.timezone).toBe('Asia/Tokyo');
-			expect(actual.city).toBe('');
+			expect(actual.city).toBe('Matsumoto');
 			expect(actual.ll).toBeTruthy();
 			expect(actual.metro).toBe(0);
-			expect(actual.area).toBe(200);
+			expect(actual.area).toBe(100);
 		});
 
 		it('should match data for IPv4 - RU', () => {
@@ -57,10 +58,10 @@ describe('GeoIP2', () => {
 			expect(actual.region).toBe('IVA');
 			expect(actual.isEu).toBe(false);
 			expect(actual.timezone).toBe('Europe/Moscow');
-			expect(actual.city).toBe('Ivanovo');
+			expect(actual.city).toBe('Vichuga');
 			expect(actual.ll).toBeTruthy();
 			expect(actual.metro).toBe(0);
-			expect(actual.area).toBe(5);
+			expect(actual.area).toBe(20);
 		});
 	});
 
@@ -71,10 +72,10 @@ describe('GeoIP2', () => {
 			expect(actual.region).toBe('06');
 			expect(actual.isEu).toBe(true);
 			expect(actual.timezone).toBe('Europe/Warsaw');
-			expect(actual.city).toBe('Miączyn');
+			expect(actual.city).toBe('Lublin');
 			expect(actual.ll).toBeTruthy();
 			expect(actual.metro).toBe(0);
-			expect(actual.area).toBe(100);
+			expect(actual.area).toBe(50);
 		});
 
 		it('should match data for IPv6 - NL ', () => {
