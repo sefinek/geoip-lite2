@@ -1,4 +1,4 @@
-const { openSync, fstatSync, readSync, closeSync } = require('node:fs');
+const { readFileSync } = require('node:fs');
 const fsPromises = require('node:fs/promises');
 const { basename, join, resolve } = require('node:path');
 const { isIP } = require('node:net');
@@ -200,39 +200,26 @@ const preloadAsync = async () => {
 const preload = callback => {
 	if (typeof callback === 'function') return preloadAsync().then(() => callback()).catch(callback);
 
-	let datFile;
-	let datSize;
+	let mainBuffer;
 	try {
-		datFile = openSync(DATA_FILES.cityNames, 'r');
-		datSize = fstatSync(datFile).size;
-		if (datSize === 0) {
-			closeSync(datFile);
-			datFile = openSync(DATA_FILES.country, 'r');
-			datSize = fstatSync(datFile).size;
-			cache4.recordSize = RECORD_SIZE;
-			cache4.locationBuffer = null;
+		const cityNamesBuffer = readFileSync(DATA_FILES.cityNames);
+		if (cityNamesBuffer.length > 0) {
+			cache4.locationBuffer = cityNamesBuffer;
+			mainBuffer = readFileSync(DATA_FILES.city);
 		} else {
-			cache4.locationBuffer = Buffer.alloc(datSize);
-			readSync(datFile, cache4.locationBuffer, 0, datSize, 0);
-			closeSync(datFile);
-
-			datFile = openSync(DATA_FILES.city, 'r');
-			datSize = fstatSync(datFile).size;
+			cache4.locationBuffer = null;
+			cache4.recordSize = RECORD_SIZE;
+			mainBuffer = readFileSync(DATA_FILES.country);
 		}
 	} catch (err) {
 		if (err.code !== 'ENOENT' && err.code !== 'EBADF') throw err;
-
 		cache4.locationBuffer = null;
-		datFile = openSync(DATA_FILES.country, 'r');
-		datSize = fstatSync(datFile).size;
 		cache4.recordSize = RECORD_SIZE;
+		mainBuffer = readFileSync(DATA_FILES.country);
 	}
 
-	cache4.mainBuffer = Buffer.alloc(datSize);
-	readSync(datFile, cache4.mainBuffer, 0, datSize, 0);
-	closeSync(datFile);
-
-	cache4.lastRecordIdx = (datSize / cache4.recordSize) - 1;
+	cache4.mainBuffer = mainBuffer;
+	cache4.lastRecordIdx = (mainBuffer.length / cache4.recordSize) - 1;
 	cache4.lastIP = cache4.mainBuffer.readUInt32BE((cache4.lastRecordIdx * cache4.recordSize) + 4);
 	cache4.firstIP = cache4.mainBuffer.readUInt32BE(0);
 };
@@ -265,32 +252,23 @@ const preload6Async = async () => {
 const preload6 = callback => {
 	if (typeof callback === 'function') return preload6Async().then(() => callback()).catch(callback);
 
-	let datFile, datSize;
+	let mainBuffer;
 	try {
-		datFile = openSync(DATA_FILES.city6, 'r');
-		datSize = fstatSync(datFile).size;
-
-		if (datSize === 0) {
-			closeSync(datFile);
-			datFile = openSync(DATA_FILES.country6, 'r');
-			datSize = fstatSync(datFile).size;
+		const city6Buffer = readFileSync(DATA_FILES.city6);
+		if (city6Buffer.length > 0) {
+			mainBuffer = city6Buffer;
+		} else {
 			cache6.recordSize = RECORD_SIZE6;
+			mainBuffer = readFileSync(DATA_FILES.country6);
 		}
 	} catch (err) {
-		if (err.code !== 'ENOENT' && err.code !== 'EBADF') {
-			throw err;
-		}
-
-		datFile = openSync(DATA_FILES.country6, 'r');
-		datSize = fstatSync(datFile).size;
+		if (err.code !== 'ENOENT' && err.code !== 'EBADF') throw err;
 		cache6.recordSize = RECORD_SIZE6;
+		mainBuffer = readFileSync(DATA_FILES.country6);
 	}
 
-	cache6.mainBuffer = Buffer.alloc(datSize);
-	readSync(datFile, cache6.mainBuffer, 0, datSize, 0);
-	closeSync(datFile);
-
-	cache6.lastRecordIdx = (datSize / cache6.recordSize) - 1;
+	cache6.mainBuffer = mainBuffer;
+	cache6.lastRecordIdx = (mainBuffer.length / cache6.recordSize) - 1;
 	cache6.lastIP = readIp6(cache6.mainBuffer, cache6.lastRecordIdx, cache6.recordSize, 1);
 	cache6.firstIP = readIp6(cache6.mainBuffer, 0, cache6.recordSize, 0);
 };

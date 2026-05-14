@@ -130,15 +130,43 @@ const ipv6RangeFromCidr = cidr => {
 };
 
 const ntoa6 = n => {
-	let a = '[';
-
-	for (let i = 0; i < n.length; i++) {
-		a += (n[i] >>> 16).toString(16) + ':';
-		a += (n[i] & 0xffff).toString(16) + ':';
+	const groups = [];
+	for (let i = 0; i < 4; i++) {
+		groups.push((n[i] >>> 16) & 0xffff);
+		groups.push(n[i] & 0xffff);
 	}
 
-	a = a.replace(/:$/, ']').replace(/:0+/g, ':').replace(/::+/, '::');
-	return a;
+	let bestStart = -1, bestLen = 0, start = -1, len = 0;
+	for (let i = 0; i <= 8; i++) {
+		if (i < 8 && groups[i] === 0) {
+			if (start === -1) start = i;
+			len++;
+		} else {
+			if (len > bestLen) {
+				bestStart = start;
+				bestLen = len;
+			}
+			start = -1;
+			len = 0;
+		}
+	}
+
+	const parts = [];
+	for (let i = 0; i < 8;) {
+		if (bestLen > 1 && i === bestStart) {
+			parts.push('');
+			i += bestLen;
+		} else {
+			parts.push(groups[i].toString(16));
+			i++;
+		}
+	}
+
+	let result = parts.join(':');
+	if (result === '' || result.startsWith(':')) result = ':' + result;
+	if (result.endsWith(':')) result = result + ':';
+
+	return '[' + result + ']';
 };
 
 const cmp6 = (a, b) => {

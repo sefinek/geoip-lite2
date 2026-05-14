@@ -6,79 +6,73 @@ const http = require('node:http');
 const https = require('node:https');
 const path = require('node:path');
 const zlib = require('node:zlib');
-const readline = require('node:readline');
 const AdmZip = require('adm-zip');
 const { ipv4RangeFromCidr, ipv6RangeFromCidr } = require('../scripts/utils.js');
 
+// --- Logging ---
+
 const log = {
-	info: (msg, ...logArgs) => console.log(msg, ...logArgs),
-	success: (msg, ...logArgs) => console.log(msg, ...logArgs),
-	warn: (msg, ...logArgs) => console.warn(msg, ...logArgs),
-	error: (msg, ...logArgs) => console.error(msg, ...logArgs),
+	info: (msg, ...args) => console.log(msg, ...args),
+	success: (msg, ...args) => console.log(msg, ...args),
+	warn: (msg, ...args) => console.warn(msg, ...args),
+	error: (msg, ...args) => console.error(msg, ...args),
 };
 
 const TOTAL_PIPELINE_STEPS = 5;
 const formatNumber = value => Number(value).toLocaleString('en-US');
-const formatDuration = milliseconds => {
-	const totalSeconds = Math.floor(milliseconds / 1000);
+const formatDuration = ms => {
+	const totalSeconds = Math.floor(ms / 1000);
 	const minutes = Math.floor(totalSeconds / 60);
 	const seconds = totalSeconds % 60;
-	if (minutes === 0) return `${seconds}s`;
-	return `${minutes}m ${seconds}s`;
+	return minutes === 0 ? `${seconds}s` : `${minutes}m ${seconds}s`;
 };
-const getDatabaseLabel = database => database.type.toUpperCase();
-const getPipelinePrefix = (part, totalParts) => `[${part}/${totalParts}]`;
-const getCurrentPipelinePrefix = database => getPipelinePrefix(database._part, database._totalParts);
+
+const getDatabaseLabel = db => db.type.toUpperCase();
+const getPipelinePrefix = db => `[${db._part}/${db._totalParts}]`;
 const getStepPrefix = step => `[${step}/${TOTAL_PIPELINE_STEPS}]`;
-const logPipelineInfo = (database, message) => log.info(`${getCurrentPipelinePrefix(database)} ${getDatabaseLabel(database)}: ${message}`);
-const logStepInfo = (database, step, message) => log.info(`${getStepPrefix(step)} ${getDatabaseLabel(database)}: ${message}`);
-const logStepWarn = (database, step, message) => log.warn(`${getStepPrefix(step)} ${getDatabaseLabel(database)}: ${message}`);
-const logStepError = (database, step, message) => log.error(`${getStepPrefix(step)} ${getDatabaseLabel(database)}: ${message}`);
-const logGlobalInfo = message => log.info(`[0/0] ${message}`);
-const logGlobalError = message => log.error(`[0/0] ${message}`);
-const toLogPreview = line => (line.length > 120 ? `${line.slice(0, 117)}...` : line);
-const createProgressLogger = (database, step, activity) => {
+
+const logPipelineInfo = (db, msg) => log.info(`${getPipelinePrefix(db)} ${getDatabaseLabel(db)}: ${msg}`);
+const logStepInfo = (db, step, msg) => log.info(`${getPipelinePrefix(db)}${getStepPrefix(step)} ${getDatabaseLabel(db)}: ${msg}`);
+const logStepWarn = (db, step, msg) => log.warn(`${getPipelinePrefix(db)}${getStepPrefix(step)} ${getDatabaseLabel(db)}: ${msg}`);
+const logStepError = (db, step, msg) => log.error(`${getPipelinePrefix(db)}${getStepPrefix(step)} ${getDatabaseLabel(db)}: ${msg}`);
+const logGlobalInfo = msg => log.info(`[0/0] ${msg}`);
+const logGlobalError = msg => log.error(`[0/0] ${msg}`);
+const toLogPreview = line => line.length > 120 ? `${line.slice(0, 117)}...` : line;
+
+const createProgressLogger = (db, step, activity) => {
 	const startedAt = Date.now();
 	let lastLogAt = startedAt;
 	const prefix = getStepPrefix(step);
-	const dbLabel = getDatabaseLabel(database);
+	const label = getDatabaseLabel(db);
 
 	return {
-		maybeLog: (processedRows, writtenRows) => {
+		maybeLog: (processed, written) => {
 			const now = Date.now();
-			if ((now - lastLogAt) < 10000) return;
+			if (now - lastLogAt < 10000) return;
 			lastLogAt = now;
-
-			const elapsedSeconds = Math.max((now - startedAt) / 1000, 1);
-			const avgRowsPerSecond = Math.round(processedRows / elapsedSeconds);
-			log.info(
-				`${prefix} ${dbLabel}: ${activity}... processed=${formatNumber(processedRows)} written=${formatNumber(writtenRows)} avg=${formatNumber(avgRowsPerSecond)}/s`
-			);
+			const rps = Math.round(processed / Math.max((now - startedAt) / 1000, 1));
+			log.info(`${prefix} ${label}: ${activity}... processed=${formatNumber(processed)} written=${formatNumber(written)} avg=${formatNumber(rps)}/s`);
 		},
-		done: (processedRows, writtenRows) => {
+		done: (processed, written) => {
 			const durationMs = Date.now() - startedAt;
-			const elapsedSeconds = Math.max(durationMs / 1000, 1);
-			const avgRowsPerSecond = Math.round(processedRows / elapsedSeconds);
-			log.info(
-				`${prefix} ${dbLabel}: Done! processed=${formatNumber(processedRows)} written=${formatNumber(writtenRows)} avg=${formatNumber(avgRowsPerSecond)}/s duration=${formatDuration(durationMs)}`
-			);
+			const rps = Math.round(processed / Math.max(durationMs / 1000, 1));
+			log.info(`${prefix} ${label}: Done! processed=${formatNumber(processed)} written=${formatNumber(written)} avg=${formatNumber(rps)}/s duration=${formatDuration(durationMs)}`);
 		},
 	};
 };
 
-const args = process.argv.slice(2);
-let license_key = args.find(arg => arg.match(/^license_key=[a-zA-Z0-9]+/) !== null);
-if (typeof license_key === 'undefined' && typeof process.env.MAXMIND_KEY !== 'undefined') {
-	license_key = `license_key=${process.env.MAXMIND_KEY}`;
-}
+// --- Args & Config ---
 
-let geoDataDir = args.find(arg => arg.match(/^geoDataDir=[\w./]+/) !== null);
-if (typeof geoDataDir === 'undefined' && typeof process.env.GEOIP_DATA_DIR !== 'undefined') {
-	geoDataDir = `geoDataDir=${process.env.GEOIP_DATA_DIR}`;
-}
+const args = process.argv.slice(2);
+
+let license_key = args.find(a => (/^license_key=[a-zA-Z0-9]+/).test(a));
+if (!license_key && process.env.MAXMIND_KEY) license_key = `license_key=${process.env.MAXMIND_KEY}`;
+
+let geoDataDir = args.find(a => (/^geoDataDir=[\w./]+/).test(a));
+if (!geoDataDir && process.env.GEOIP_DATA_DIR) geoDataDir = `geoDataDir=${process.env.GEOIP_DATA_DIR}`;
 
 let dataPath = path.resolve(__dirname, '..', 'data');
-if (typeof geoDataDir !== 'undefined') {
+if (geoDataDir) {
 	dataPath = path.resolve(process.cwd(), geoDataDir.split('=')[1]);
 	if (!fs.existsSync(dataPath)) {
 		logGlobalError(`Directory does not exist: ${dataPath}`);
@@ -89,39 +83,47 @@ if (typeof geoDataDir !== 'undefined') {
 const tmpPath = process.env.GEOIP_TMP_DIR || path.resolve(__dirname, '..', 'tmp');
 const countryLookup = {};
 const cityLookup = { NaN: -1 };
-const databases = [{
-	type: 'country',
-	url: `https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-Country-CSV&suffix=zip&${license_key}`,
-	checksum: `https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-Country-CSV&suffix=zip.sha256&${license_key}`,
-	fileName: 'GeoLite2-Country-CSV.zip',
-	src: [
-		'GeoLite2-Country-Locations-en.csv',
-		'GeoLite2-Country-Blocks-IPv4.csv',
-		'GeoLite2-Country-Blocks-IPv6.csv',
-	],
-	dest: ['', 'geoip-country.dat', 'geoip-country6.dat'],
-},
-{
-	type: 'city',
-	url: `https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-City-CSV&suffix=zip&${license_key}`,
-	checksum: `https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-City-CSV&suffix=zip.sha256&${license_key}`,
-	fileName: 'GeoLite2-City-CSV.zip',
-	src: [
-		'GeoLite2-City-Locations-en.csv',
-		'GeoLite2-City-Blocks-IPv4.csv',
-		'GeoLite2-City-Blocks-IPv6.csv',
-	],
-	dest: ['geoip-city-names.dat', 'geoip-city.dat', 'geoip-city6.dat'],
-}];
 
-const ensureParentDir = dirName => {
-	const dir = path.dirname(dirName);
-	fs.mkdirSync(dir, { recursive: true });
-};
+const databases = [
+	{
+		type: 'country',
+		url: `https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-Country-CSV&suffix=zip&${license_key}`,
+		checksum: `https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-Country-CSV&suffix=zip.sha256&${license_key}`,
+		fileName: 'GeoLite2-Country-CSV.zip',
+		src: ['GeoLite2-Country-Locations-en.csv', 'GeoLite2-Country-Blocks-IPv4.csv', 'GeoLite2-Country-Blocks-IPv6.csv'],
+		dest: ['', 'geoip-country.dat', 'geoip-country6.dat'],
+	},
+	{
+		type: 'city',
+		url: `https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-City-CSV&suffix=zip&${license_key}`,
+		checksum: `https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-City-CSV&suffix=zip.sha256&${license_key}`,
+		fileName: 'GeoLite2-City-CSV.zip',
+		src: ['GeoLite2-City-Locations-en.csv', 'GeoLite2-City-Blocks-IPv4.csv', 'GeoLite2-City-Blocks-IPv6.csv'],
+		dest: ['geoip-city-names.dat', 'geoip-city.dat', 'geoip-city6.dat'],
+	},
+];
 
-const removePathSync = targetPath => {
-	fs.rmSync(targetPath, { recursive: true, force: true });
-};
+// --- Utilities ---
+
+const ensureParentDir = filePath => fs.mkdirSync(path.dirname(filePath), { recursive: true });
+const removePathSync = targetPath => fs.rmSync(targetPath, { recursive: true, force: true });
+
+const writeBuffer = (stream, buffer) => new Promise((resolve, reject) =>
+	stream.write(buffer, err => (err ? reject(err) : resolve()))
+);
+
+const closeWriteStream = stream => new Promise((resolve, reject) =>
+	stream.end(err => (err ? reject(err) : resolve()))
+);
+
+const collectResponse = response => new Promise((resolve, reject) => {
+	let data = '';
+	response.on('data', chunk => data += chunk);
+	response.on('end', () => resolve(data));
+	response.on('error', reject);
+});
+
+// --- CSV Parsing ---
 
 const tryFixingLine = line => {
 	let pos1 = 0;
@@ -132,12 +134,18 @@ const tryFixingLine = line => {
 		pos1 = pos2;
 		pos2 = line.indexOf(',', pos1 + 1);
 		if (pos2 < 0) pos2 = line.length;
-		if (line.indexOf('\'', (pos1 || 0)) > -1 && line.indexOf('\'', pos1) < pos2 && line[pos1 + 1] !== '"' && line[pos2 - 1] !== '"') {
-			line = line.substring(0, pos1 + 1) + '"' + line.substring(pos1 + 1, pos2) + '"' + line.substring(pos2);
+		if (
+			line.indexOf('\'', pos1 || 0) > -1 &&
+			line.indexOf('\'', pos1) < pos2 &&
+			line[pos1 + 1] !== '"' &&
+			line[pos2 - 1] !== '"'
+		) {
+			line = `${line.substring(0, pos1 + 1)}"${line.substring(pos1 + 1, pos2)}"${line.substring(pos2)}`;
 			pos2 = line.indexOf(',', pos2 + 1);
 			if (pos2 < 0) pos2 = line.length;
 		}
 	}
+
 	return line;
 };
 
@@ -149,25 +157,28 @@ const CSVtoArray = text => {
 		text = tryFixingLine(text);
 		if (!re_valid.test(text)) return null;
 	}
+
 	const a = [];
-	text.replace(re_value,
-		(m0, m1, m2, m3) => {
-			if (m1 !== undefined) a.push(m1.replace(/\\'/g, '\''));
-			else if (m2 !== undefined) a.push(m2.replace(/\\"/g, '"').replace(/\\'/g, '\''));
-			else if (m3 !== undefined) a.push(m3);
-			return '';
-		});
+	text.replace(re_value, (m0, m1, m2, m3) => {
+		if (m1 !== undefined) a.push(m1.replace(/\\'/g, '\''));
+		else if (m2 !== undefined) a.push(m2.replace(/\\"/g, '"').replace(/\\'/g, '\''));
+		else if (m3 !== undefined) a.push(m3);
+		return '';
+	});
+
 	if ((/,\s*$/).test(text)) a.push('');
 	return a;
 };
 
-const getHTTPOptions = downloadUrl => {
-	const parsedUrl = new URL(downloadUrl);
+// --- HTTP ---
+
+const getHTTPOptions = url => {
+	const parsed = new URL(url);
 	const options = {
-		protocol: parsedUrl.protocol,
-		hostname: parsedUrl.hostname,
-		port: parsedUrl.port ? Number.parseInt(parsedUrl.port, 10) : undefined,
-		path: parsedUrl.pathname + parsedUrl.search,
+		protocol: parsed.protocol,
+		hostname: parsed.hostname,
+		port: parsed.port ? Number.parseInt(parsed.port, 10) : undefined,
+		path: parsed.pathname + parsed.search,
 		headers: { 'User-Agent': UserAgent },
 	};
 
@@ -178,7 +189,7 @@ const getHTTPOptions = downloadUrl => {
 			options.agent = new HttpsProxyAgent(proxy);
 		} catch (err) {
 			logGlobalError(`Proxy configured but https-proxy-agent is missing: ${err.message}`);
-			process.exit(-1);
+			process.exit(1);
 		}
 	}
 
@@ -188,10 +199,10 @@ const getHTTPOptions = downloadUrl => {
 const REDIRECT_STATUS_CODES = new Set([301, 302, 303, 307, 308]);
 const MAX_REDIRECTS = 10;
 
-const requestWithRedirect = (downloadUrl, onResponse) => {
-	const executeRequest = (url, redirectCount) => {
-		const req = https.get(getHTTPOptions(url), response => {
-			const status = response.statusCode || 0;
+const requestWithRedirect = (url, onResponse) => {
+	const execute = (currentUrl, redirectCount) => {
+		const req = https.get(getHTTPOptions(currentUrl), response => {
+			const { statusCode: status } = response;
 
 			if (REDIRECT_STATUS_CODES.has(status)) {
 				if (redirectCount >= MAX_REDIRECTS) {
@@ -200,16 +211,15 @@ const requestWithRedirect = (downloadUrl, onResponse) => {
 					process.exit(1);
 				}
 
-				const redirectLocation = response.headers.location;
-				if (!redirectLocation) {
+				const location = response.headers.location;
+				if (!location) {
 					logGlobalError(`HTTP redirect response without location header [${status}]`);
 					response.destroy();
 					process.exit(1);
 				}
 
 				response.resume();
-				const redirectUrl = new URL(redirectLocation, url).toString();
-				executeRequest(redirectUrl, redirectCount + 1);
+				execute(new URL(location, currentUrl).toString(), redirectCount + 1);
 				return;
 			}
 
@@ -222,27 +232,15 @@ const requestWithRedirect = (downloadUrl, onResponse) => {
 		});
 	};
 
-	executeRequest(downloadUrl, 0);
+	execute(url, 0);
 };
 
-const writeBuffer = (stream, buffer) => new Promise((resolve, reject) => {
-	stream.write(buffer, err => {
-		if (err) reject(err);
-		else resolve();
-	});
-});
+// --- File line processing ---
 
-const closeWriteStream = stream => new Promise((resolve, reject) => {
-	stream.end(err => {
-		if (err) reject(err);
-		else resolve();
-	});
-});
-
-const processDataFileByLine = async (tmpDataFile, onDataLine) => {
-	const input = fs.createReadStream(tmpDataFile, { encoding: 'utf8' });
+const processDataFileByLine = async (filePath, onLine) => {
+	const input = fs.createReadStream(filePath, { encoding: 'utf8' });
 	let pending = '';
-	let lineNumber = 0;
+	let isFirstLine = true;
 
 	for await (const chunk of input) {
 		pending += chunk;
@@ -251,12 +249,12 @@ const processDataFileByLine = async (tmpDataFile, onDataLine) => {
 		while (newlineIndex !== -1) {
 			let line = pending.slice(0, newlineIndex);
 			pending = pending.slice(newlineIndex + 1);
-
 			if (line.endsWith('\r')) line = line.slice(0, -1);
 
-			lineNumber++;
-			if (lineNumber !== 1) {
-				await onDataLine(line);
+			if (isFirstLine) {
+				isFirstLine = false;
+			} else {
+				await onLine(line);
 			}
 
 			newlineIndex = pending.indexOf('\n');
@@ -264,153 +262,61 @@ const processDataFileByLine = async (tmpDataFile, onDataLine) => {
 	}
 
 	if (pending.length > 0) {
-		let line = pending;
-		if (line.endsWith('\r')) line = line.slice(0, -1);
-		lineNumber++;
-		if (lineNumber !== 1) {
-			await onDataLine(line);
-		}
+		const line = pending.endsWith('\r') ? pending.slice(0, -1) : pending;
+		if (!isFirstLine) await onLine(line);
 	}
 };
 
-const check = (database, cb) => {
-	if (args.indexOf('force') !== -1) {
-		logStepInfo(database, 1, 'Force mode enabled, skipping checksum verification');
-		return cb(null, database);
-	}
+// Shared boilerplate for IP data processing steps.
+// buildBuffer(line) contract:
+//   undefined → skip line entirely (not counted, e.g. malformed)
+//   null      → count as processed, but do not write (e.g. country with unknown cc)
+//   Buffer    → count as processed and write
+const processIPData = async (database, step, label, tmpSrc, dataDest, buildBuffer) => {
+	let processedRows = 0;
+	let writtenRows = 0;
+	const dataFile = path.join(dataPath, dataDest);
+	const tmpDataFile = path.join(tmpPath, tmpSrc);
 
-	const checksumUrl = database.checksum;
-	if (typeof checksumUrl === 'undefined') return cb(null, database);
-	fs.readFile(path.join(dataPath, `${database.type}.checksum`), { encoding: 'utf8' }, (err, data) => {
-		if (!err && data && data.length) database.checkValue = data;
+	removePathSync(dataFile);
+	ensureParentDir(dataFile);
+	logStepInfo(database, step, `Processing ${label}: source=${tmpSrc}; output=${dataDest}`);
 
-		logStepInfo(database, 1, `Checking checksum for ${database.fileName}...`);
+	const progress = createProgressLogger(database, step, `Processing ${label}`);
+	const datFile = fs.createWriteStream(dataFile);
+	let processingError = null;
 
-		requestWithRedirect(checksumUrl, (response, status) => {
-			if (status !== 200) {
-				logStepError(database, 1, `HTTP request failed [${status} ${http.STATUS_CODES[status]}]`);
-				response.destroy();
-				process.exit(1);
+	try {
+		await processDataFileByLine(tmpDataFile, async line => {
+			const b = buildBuffer(line);
+			if (b === undefined) return;
+
+			processedRows++;
+			if (b !== null) {
+				await writeBuffer(datFile, b);
+				writtenRows++;
 			}
-
-			let str = '';
-			response.on('data', chunk => {
-				str += chunk;
-			});
-
-			response.on('end', () => {
-				if (str && str.length) {
-					if (str === database.checkValue) {
-						logStepInfo(database, 1, 'Checksum unchanged, skipping download, extraction, processing and checksum write');
-						database.skip = true;
-					} else {
-						logStepInfo(database, 1, 'New data detected, continuing with update...');
-						database.checkValue = str;
-					}
-				}
-				else {
-					logStepError(database, 1, 'Could not retrieve checksum, aborting...');
-					logStepError(database, 1, 'Use "force" to bypass checksum validation');
-					response.destroy();
-					process.exit(1);
-				}
-				cb(null, database);
-			});
+			progress.maybeLog(processedRows, writtenRows);
 		});
-	});
-};
-
-const fetch = (database, cb) => {
-	if (database.skip) return cb(null, null, null, database);
-
-	const downloadUrl = database.url;
-	let fileName = database.fileName;
-	const gzip = path.extname(fileName) === '.gz';
-	if (gzip) fileName = fileName.replace('.gz', '');
-
-	const tmpFile = path.join(tmpPath, fileName);
-	if (fs.existsSync(tmpFile)) {
-		logStepInfo(database, 2, `Reusing cached download: ${fileName}`);
-		return cb(null, tmpFile, fileName, database);
+	} catch (err) {
+		processingError = err;
 	}
 
-	logStepInfo(database, 2, `Downloading ${fileName}...`);
-	ensureParentDir(tmpFile);
-
-	requestWithRedirect(downloadUrl, (response, status) => {
-		if (status !== 200) {
-			logStepError(database, 2, `HTTP request failed [${status} ${http.STATUS_CODES[status]}]`);
-			response.destroy();
-			process.exit(1);
-		}
-
-		let settled = false;
-		const finish = err => {
-			if (settled) return;
-			settled = true;
-
-			if (err) {
-				fs.unlink(tmpFile, unlinkErr => {
-					if (unlinkErr && unlinkErr.code !== 'ENOENT') {
-						logStepWarn(database, 2, `Failed to remove incomplete download: ${unlinkErr.message}`);
-					}
-					cb(err);
-				});
-				return;
-			}
-
-			cb(null, tmpFile, fileName, database);
-		};
-
-		const tmpFileStream = fs.createWriteStream(tmpFile);
-		tmpFileStream.on('error', finish);
-		response.on('error', finish);
-
-		if (gzip) {
-			const gunzipStream = zlib.createGunzip();
-			gunzipStream.on('error', finish);
-			response.pipe(gunzipStream).pipe(tmpFileStream);
-		} else {
-			response.pipe(tmpFileStream);
-		}
-
-		tmpFileStream.on('close', () => finish());
-	});
+	await closeWriteStream(datFile);
+	if (processingError) throw processingError;
+	progress.done(processedRows, writtenRows);
 };
 
-const extract = (tmpFile, tmpFileName, database, cb) => {
-	if (database.skip) return cb(null, database);
+// --- Data processors ---
 
-	if (path.extname(tmpFileName) !== '.zip') {
-		logStepInfo(database, 3, 'Extraction skipped (non-zip file)');
-		cb(null, database);
-	} else {
-		logStepInfo(database, 3, `Extracting ${tmpFileName}...`);
-		const zip = new AdmZip(tmpFile);
-		const zipEntries = zip.getEntries();
-		let extractedCount = 0;
-
-		zipEntries.forEach(entry => {
-			if (entry.isDirectory) return;
-
-			const filePath = entry.entryName.split('/');
-			const fileName = filePath[filePath.length - 1];
-			const destinationPath = path.join(tmpPath, fileName);
-
-			fs.writeFileSync(destinationPath, entry.getData());
-			extractedCount++;
-		});
-		logStepInfo(database, 3, `Extracted ${formatNumber(extractedCount)} files`);
-
-		cb(null, database);
-	}
-};
-
-const processLookupCountry = (database, src, cb) => {
+const processLookupCountry = async (database, src) => {
 	let loadedRows = 0;
 	let malformedRows = 0;
+	const tmpDataFile = path.join(tmpPath, src);
 
-	const processLine = line => {
+	logStepInfo(database, 4, `Building country lookup table from ${src}...`);
+
+	await processDataFileByLine(tmpDataFile, line => {
 		const fields = CSVtoArray(line);
 		if (!fields || fields.length < 6) {
 			malformedRows++;
@@ -420,208 +326,79 @@ const processLookupCountry = (database, src, cb) => {
 
 		loadedRows++;
 		countryLookup[fields[0]] = fields[4];
-	};
-	const tmpDataFile = path.join(tmpPath, src);
-
-	logStepInfo(database, 4, `Building country lookup table from ${src}...`);
-
-	const rl = readline.createInterface({
-		input: fs.createReadStream(tmpDataFile, { encoding: 'utf8' }),
-		output: process.stdout,
-		terminal: false,
-	});
-	let settled = false;
-
-	const finish = err => {
-		if (settled) return;
-		settled = true;
-		if (err) {
-			cb(err);
-		} else {
-			logStepInfo(database, 4, `Country lookup completed! loaded=${formatNumber(loadedRows)} malformed=${formatNumber(malformedRows)}`);
-			cb();
-		}
-	};
-
-	let lineCount = 0;
-	rl.on('line', line => {
-		if (lineCount > 0) processLine(line);
-		lineCount++;
 	});
 
-	rl.on('close', () => finish());
-	rl.on('error', finish);
+	logStepInfo(database, 4, `Country lookup completed! loaded=${formatNumber(loadedRows)} malformed=${formatNumber(malformedRows)}`);
 };
 
-const processCountryData = async (database, ipFamily, src, dest) => {
-	let processedRows = 0;
-	let writtenRows = 0;
-	const dataFile = path.join(dataPath, dest);
-	const tmpDataFile = path.join(tmpPath, src);
-
-	removePathSync(dataFile);
-	ensureParentDir(dataFile);
-
-	logStepInfo(database, 4, `Processing ${ipFamily}: source=${src}; output=${dest}`);
-	const progress = createProgressLogger(database, 4, `Processing ${ipFamily}`);
-	const datFile = fs.createWriteStream(dataFile);
-
-	const processLine = async line => {
+const processCountryData = (database, label, src, dest) =>
+	processIPData(database, 4, label, src, dest, line => {
 		const fields = CSVtoArray(line);
 		if (!fields || fields.length < 6) {
-			logStepWarn(database, 4, `Malformed ${ipFamily} line skipped: ${toLogPreview(line)}`);
-			return;
+			logStepWarn(database, 4, `Malformed ${label} line skipped: ${toLogPreview(line)}`);
+			return undefined;
 		}
 
-		processedRows++;
-
-		let sip;
-		let eip;
 		const cc = countryLookup[fields[1]];
-		let b;
-		let bsz;
-		let i;
-		if (cc) {
-			if (fields[0].match(/:/)) {
-				bsz = 34;
-				[sip, eip] = ipv6RangeFromCidr(fields[0]);
+		if (!cc) return null;
 
-				b = Buffer.alloc(bsz);
-				for (i = 0; i < sip.length; i++) {
-					b.writeUInt32BE(sip[i], i * 4);
-				}
-
-				for (i = 0; i < eip.length; i++) {
-					b.writeUInt32BE(eip[i], 16 + (i * 4));
-				}
-			} else {
-				bsz = 10;
-
-				[sip, eip] = ipv4RangeFromCidr(fields[0]);
-
-				b = Buffer.alloc(bsz);
-				b.writeUInt32BE(sip, 0);
-				b.writeUInt32BE(eip, 4);
-			}
-
-			b.write(cc, bsz - 2);
-			await writeBuffer(datFile, b);
-			writtenRows++;
+		let b, bsz;
+		if (fields[0].includes(':')) {
+			bsz = 34;
+			const [sip, eip] = ipv6RangeFromCidr(fields[0]);
+			b = Buffer.alloc(bsz);
+			sip.forEach((v, i) => b.writeUInt32BE(v, i * 4));
+			eip.forEach((v, i) => b.writeUInt32BE(v, 16 + i * 4));
+		} else {
+			bsz = 10;
+			const [sip, eip] = ipv4RangeFromCidr(fields[0]);
+			b = Buffer.alloc(bsz);
+			b.writeUInt32BE(sip, 0);
+			b.writeUInt32BE(eip, 4);
 		}
+		b.write(cc, bsz - 2);
+		return b;
+	});
 
-		progress.maybeLog(processedRows, writtenRows);
-	};
-
-	let processingError = null;
-	try {
-		await processDataFileByLine(tmpDataFile, processLine);
-	} catch (err) {
-		processingError = err;
-	}
-
-	await closeWriteStream(datFile);
-	if (processingError) throw processingError;
-	progress.done(processedRows, writtenRows);
-};
-
-const processCityData = async (database, ipFamily, src, dest) => {
-	let processedRows = 0;
-	let writtenRows = 0;
-	const dataFile = path.join(dataPath, dest);
-	const tmpDataFile = path.join(tmpPath, src);
-
-	removePathSync(dataFile);
-	ensureParentDir(dataFile);
-
-	logStepInfo(database, 4, `Processing ${ipFamily}: source=${src}; output=${dest}`);
-	const progress = createProgressLogger(database, 4, `Processing ${ipFamily}`);
-	const datFile = fs.createWriteStream(dataFile);
-
-	const processLine = async line => {
-		if (line.match(/^Copyright/) || !line.match(/\d/)) return;
+const processCityData = (database, label, src, dest) =>
+	processIPData(database, 4, label, src, dest, line => {
+		if (line.startsWith('Copyright') || !(/\d/).test(line)) return undefined;
 
 		const fields = CSVtoArray(line);
 		if (!fields || fields.length < 10) {
-			logStepWarn(database, 4, `Malformed ${ipFamily} line skipped: ${toLogPreview(line)}`);
-			return;
+			logStepWarn(database, 4, `Malformed ${label} line skipped: ${toLogPreview(line)}`);
+			return undefined;
 		}
-		let sip;
-		let eip;
-		let locId;
-		let b;
-		let bsz;
-		let lat;
-		let lon;
-		let area;
 
-		let i;
+		const locId = cityLookup[Number.parseInt(fields[1], 10)];
+		const lat = Math.round(parseFloat(fields[7]) * 10000);
+		const lon = Math.round(parseFloat(fields[8]) * 10000);
+		const area = Number.parseInt(fields[9], 10);
 
-		processedRows++;
-
-		if (fields[0].match(/:/)) {
-			let offset = 0;
-			bsz = 48;
-			[sip, eip] = ipv6RangeFromCidr(fields[0]);
-			locId = parseInt(fields[1], 10);
-			locId = cityLookup[locId];
-
-			b = Buffer.alloc(bsz);
-
-			for (i = 0; i < sip.length; i++) {
-				b.writeUInt32BE(sip[i], offset);
-				offset += 4;
-			}
-
-			for (i = 0; i < eip.length; i++) {
-				b.writeUInt32BE(eip[i], offset);
-				offset += 4;
-			}
+		if (fields[0].includes(':')) {
+			const [sip, eip] = ipv6RangeFromCidr(fields[0]);
+			const b = Buffer.alloc(48);
+			sip.forEach((v, i) => b.writeUInt32BE(v, i * 4));
+			eip.forEach((v, i) => b.writeUInt32BE(v, 16 + i * 4));
 			b.writeUInt32BE(locId >>> 0, 32);
-
-			lat = Math.round(parseFloat(fields[7]) * 10000);
-			lon = Math.round(parseFloat(fields[8]) * 10000);
-			area = parseInt(fields[9], 10);
 			b.writeInt32BE(lat, 36);
 			b.writeInt32BE(lon, 40);
 			b.writeInt32BE(area, 44);
-		} else {
-			bsz = 24;
-
-			[sip, eip] = ipv4RangeFromCidr(fields[0]);
-			locId = parseInt(fields[1], 10);
-			locId = cityLookup[locId];
-			b = Buffer.alloc(bsz);
-			b.writeUInt32BE(sip >>> 0, 0);
-			b.writeUInt32BE(eip >>> 0, 4);
-			b.writeUInt32BE(locId >>> 0, 8);
-
-			lat = Math.round(parseFloat(fields[7]) * 10000);
-			lon = Math.round(parseFloat(fields[8]) * 10000);
-			area = parseInt(fields[9], 10);
-			b.writeInt32BE(lat, 12);
-			b.writeInt32BE(lon, 16);
-			b.writeInt32BE(area, 20);
+			return b;
 		}
 
-		await writeBuffer(datFile, b);
-		writtenRows++;
-		progress.maybeLog(processedRows, writtenRows);
-	};
+		const [sip, eip] = ipv4RangeFromCidr(fields[0]);
+		const b = Buffer.alloc(24);
+		b.writeUInt32BE(sip >>> 0, 0);
+		b.writeUInt32BE(eip >>> 0, 4);
+		b.writeUInt32BE(locId >>> 0, 8);
+		b.writeInt32BE(lat, 12);
+		b.writeInt32BE(lon, 16);
+		b.writeInt32BE(area, 20);
+		return b;
+	});
 
-	let processingError = null;
-	try {
-		await processDataFileByLine(tmpDataFile, processLine);
-	} catch (err) {
-		processingError = err;
-	}
-
-	await closeWriteStream(datFile);
-	if (processingError) throw processingError;
-	progress.done(processedRows, writtenRows);
-};
-
-const processCityDataNames = (database, src, dest, cb) => {
-	let locId = null;
+const processCityDataNames = async (database, src, dest) => {
 	let linesCount = 0;
 	let malformedRows = 0;
 	const dataFile = path.join(dataPath, dest);
@@ -630,12 +407,11 @@ const processCityDataNames = (database, src, dest, cb) => {
 	removePathSync(dataFile);
 	logStepInfo(database, 4, `Processing city names: source=${src}; output=${dest}`);
 
-	const datFile = fs.openSync(dataFile, 'w');
+	const datFile = fs.createWriteStream(dataFile);
 
-	const processLine = (line) => {
-		if (line.match(/^Copyright/) || !line.match(/\d/)) return;
+	await processDataFileByLine(tmpDataFile, async line => {
+		if (line.startsWith('Copyright') || !(/\d/).test(line)) return;
 
-		const b = Buffer.alloc(88);
 		const fields = CSVtoArray(line);
 		if (!fields) {
 			malformedRows++;
@@ -643,96 +419,175 @@ const processCityDataNames = (database, src, dest, cb) => {
 			return;
 		}
 
-		locId = parseInt(fields[0]);
+		cityLookup[Number.parseInt(fields[0], 10)] = linesCount;
 
-		cityLookup[locId] = linesCount;
-		const cc = fields[4];
-		const rg = fields[6];
-		const city = fields[10];
-		const metro = parseInt(fields[11]);
-		const tz = fields[12];
-		const isEuFlag = fields[13];
-
-		b.write(cc, 0);
-		b.write(rg, 2);
-
+		const b = Buffer.alloc(88);
+		b.write(fields[4], 0);
+		b.write(fields[6], 2);
+		const metro = Number.parseInt(fields[11], 10);
 		if (metro) b.writeInt32BE(metro, 5);
-		b.write(isEuFlag, 9);
-		b.write(tz, 10);
-		b.write(city, 42);
+		b.write(fields[13], 9);
+		b.write(fields[12], 10);
+		b.write(fields[10], 42);
 
-		fs.writeSync(datFile, b, 0, b.length, null);
+		await writeBuffer(datFile, b);
 		linesCount++;
-	};
-
-	const rl = readline.createInterface({
-		input: fs.createReadStream(tmpDataFile, { encoding: 'utf8' }),
-		output: process.stdout,
-		terminal: false,
-	});
-	let settled = false;
-
-	const finish = (err) => {
-		if (settled) return;
-		settled = true;
-		fs.closeSync(datFile);
-		if (err) {
-			cb(err);
-		} else {
-			logStepInfo(database, 4, `City names completed! written=${formatNumber(linesCount)} malformed=${formatNumber(malformedRows)}`);
-			cb();
-		}
-	};
-
-	let lineCount = 0;
-	rl.on('line', line => {
-		if (lineCount > 0) processLine(line);
-
-		lineCount++;
 	});
 
-	rl.on('close', () => finish());
-	rl.on('error', finish);
+	await closeWriteStream(datFile);
+	logStepInfo(database, 4, `City names completed! written=${formatNumber(linesCount)} malformed=${formatNumber(malformedRows)}`);
 };
 
-const processData = (database, cb) => {
-	if (database.skip) return cb(null, database);
+const processData = async database => {
+	if (database.skip) return;
 
-	const type = database.type;
-	const src = database.src;
-	const dest = database.dest;
-
+	const { type, src, dest } = database;
 	if (type === 'country') {
-		processLookupCountry(database, src[0], err => {
-			if (err) return cb(err);
-			processCountryData(database, 'country IPv4 data', src[1], dest[1]).then(() => {
-				return processCountryData(database, 'country IPv6 data', src[2], dest[2]);
-			}).then(() => {
-				cb(null, database);
-			}).catch(cb);
-		});
+		await processLookupCountry(database, src[0]);
+		await processCountryData(database, 'country IPv4 data', src[1], dest[1]);
+		await processCountryData(database, 'country IPv6 data', src[2], dest[2]);
 	} else if (type === 'city') {
-		processCityDataNames(database, src[0], dest[0], err => {
-			if (err) return cb(err);
-			processCityData(database, 'city IPv4 data', src[1], dest[1]).then(() => {
-				return processCityData(database, 'city IPv6 data', src[2], dest[2]);
-			}).then(() => {
-				cb(null, database);
-			}).catch(cb);
-		});
+		await processCityDataNames(database, src[0], dest[0]);
+		await processCityData(database, 'city IPv4 data', src[1], dest[1]);
+		await processCityData(database, 'city IPv6 data', src[2], dest[2]);
 	} else {
-		cb(new Error(`Unknown database type: "${type}"`));
+		throw new Error(`Unknown database type: "${type}"`);
 	}
 };
 
-const updateChecksum = (database, cb) => {
-	if (database.skip || !database.checkValue) return cb();
+// --- Pipeline steps (async, no callbacks) ---
 
-	fs.writeFile(path.join(dataPath, database.type + '.checksum'), database.checkValue, 'utf8', err => {
-		if (err) logStepError(database, 5, `Failed to write checksum: ${err.message}`);
-		cb();
+const check = async database => {
+	if (args.includes('force')) {
+		logStepInfo(database, 1, 'Force mode enabled, skipping checksum verification');
+		return;
+	}
+
+	if (!database.checksum) return;
+
+	try {
+		const stored = await fs.promises.readFile(path.join(dataPath, `${database.type}.checksum`), 'utf8');
+		if (stored) database.checkValue = stored;
+	} catch { /* ignore – file may not exist yet */ }
+
+	logStepInfo(database, 1, `Checking checksum for ${database.fileName}...`);
+
+	const remote = await new Promise(resolve => {
+		requestWithRedirect(database.checksum, (response, status) => {
+			if (status !== 200) {
+				logStepError(database, 1, `HTTP request failed [${status} ${http.STATUS_CODES[status]}]`);
+				response.destroy();
+				process.exit(1);
+			}
+			collectResponse(response).then(resolve);
+		});
 	});
+
+	if (!remote) {
+		logStepError(database, 1, 'Could not retrieve checksum, aborting...');
+		logStepError(database, 1, 'Use "force" to bypass checksum validation');
+		process.exit(1);
+	}
+
+	if (remote === database.checkValue) {
+		logStepInfo(database, 1, 'Checksum unchanged, skipping download, extraction, processing and checksum write');
+		database.skip = true;
+	} else {
+		logStepInfo(database, 1, 'New data detected, continuing with update...');
+		database.checkValue = remote;
+	}
 };
+
+const fetch = async database => {
+	if (database.skip) return { tmpFile: null, tmpFileName: null };
+
+	let fileName = database.fileName;
+	const gzip = path.extname(fileName) === '.gz';
+	if (gzip) fileName = fileName.replace('.gz', '');
+
+	const tmpFile = path.join(tmpPath, fileName);
+	if (fs.existsSync(tmpFile)) {
+		logStepInfo(database, 2, `Reusing cached download: ${fileName}`);
+		return { tmpFile, tmpFileName: fileName };
+	}
+
+	logStepInfo(database, 2, `Downloading ${fileName}...`);
+	ensureParentDir(tmpFile);
+
+	await new Promise((resolve, reject) => {
+		requestWithRedirect(database.url, (response, status) => {
+			if (status !== 200) {
+				logStepError(database, 2, `HTTP request failed [${status} ${http.STATUS_CODES[status]}]`);
+				response.destroy();
+				process.exit(1);
+			}
+
+			let settled = false;
+			const finish = err => {
+				if (settled) return;
+				settled = true;
+				if (err) {
+					fs.unlink(tmpFile, unlinkErr => {
+						if (unlinkErr && unlinkErr.code !== 'ENOENT') {
+							logStepWarn(database, 2, `Failed to remove incomplete download: ${unlinkErr.message}`);
+						}
+						reject(err);
+					});
+					return;
+				}
+				resolve();
+			};
+
+			const tmpFileStream = fs.createWriteStream(tmpFile);
+			tmpFileStream.on('error', finish);
+			response.on('error', finish);
+
+			if (gzip) {
+				const gunzipStream = zlib.createGunzip();
+				gunzipStream.on('error', finish);
+				response.pipe(gunzipStream).pipe(tmpFileStream);
+			} else {
+				response.pipe(tmpFileStream);
+			}
+
+			tmpFileStream.on('close', () => finish());
+		});
+	});
+
+	return { tmpFile, tmpFileName: fileName };
+};
+
+const extract = async (database, tmpFile, tmpFileName) => {
+	if (database.skip) return;
+
+	if (path.extname(tmpFileName) !== '.zip') {
+		logStepInfo(database, 3, 'Extraction skipped (non-zip file)');
+		return;
+	}
+
+	logStepInfo(database, 3, `Extracting ${tmpFileName}...`);
+	const zip = new AdmZip(tmpFile);
+	const entries = zip.getEntries().filter(e => !e.isDirectory);
+
+	for (const entry of entries) {
+		const fileName = entry.entryName.split('/').pop();
+		fs.writeFileSync(path.join(tmpPath, fileName), entry.getData());
+	}
+
+	logStepInfo(database, 3, `Extracted ${formatNumber(entries.length)} files`);
+};
+
+const updateChecksum = async database => {
+	if (database.skip || !database.checkValue) return;
+
+	try {
+		await fs.promises.writeFile(path.join(dataPath, `${database.type}.checksum`), database.checkValue, 'utf8');
+	} catch (err) {
+		logStepError(database, 5, `Failed to write checksum: ${err.message}`);
+	}
+};
+
+// --- Main ---
 
 if (!license_key) {
 	logGlobalError('Missing license_key');
@@ -742,13 +597,6 @@ if (!license_key) {
 removePathSync(tmpPath);
 fs.mkdirSync(tmpPath, { recursive: true });
 
-const invokeStep = (fn, ...stepArgs) => new Promise((resolve, reject) => {
-	fn(...stepArgs, (err, ...results) => {
-		if (err) reject(err);
-		else resolve(results);
-	});
-});
-
 const run = async () => {
 	const totalDatabases = databases.length;
 	for (const [index, database] of databases.entries()) {
@@ -757,11 +605,11 @@ const run = async () => {
 		const startedAt = Date.now();
 		logPipelineInfo(database, `Starting update (${database.fileName})!`);
 
-		const [checkedDatabase] = await invokeStep(check, database);
-		const [tmpFile, tmpFileName, fetchedDatabase] = await invokeStep(fetch, checkedDatabase);
-		const [extractedDatabase] = await invokeStep(extract, tmpFile, tmpFileName, fetchedDatabase);
-		const [processedDatabase] = await invokeStep(processData, extractedDatabase);
-		await invokeStep(updateChecksum, processedDatabase);
+		await check(database);
+		const { tmpFile, tmpFileName } = await fetch(database);
+		await extract(database, tmpFile, tmpFileName);
+		await processData(database);
+		await updateChecksum(database);
 
 		logPipelineInfo(database, `Finished update in ${formatDuration(Date.now() - startedAt)}`);
 	}
@@ -771,7 +619,7 @@ const runStartedAt = Date.now();
 run()
 	.then(() => {
 		log.success(`[${databases.length}/${databases.length}] All databases were successfully updated in ${formatDuration(Date.now() - runStartedAt)}!`);
-		if (args.indexOf('debug') !== -1) {
+		if (args.includes('debug')) {
 			logGlobalInfo(`Debug mode enabled. Temporary files preserved at ${tmpPath}.`);
 		} else {
 			removePathSync(tmpPath);

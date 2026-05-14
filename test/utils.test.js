@@ -118,16 +118,55 @@ describe('Utility Functions', () => {
 	});
 
 	describe('#ntoa6', () => {
-		it('should convert array to IPv6 string', () => {
+		it('should wrap result in square brackets', () => {
 			const result = utils.ntoa6([0, 0, 0, 1]);
-			expect(result).toContain('::');
 			expect(result.startsWith('[')).toBe(true);
 			expect(result.endsWith(']')).toBe(true);
 		});
 
-		it('should handle non-zero values', () => {
-			const result = utils.ntoa6([0x20010db8, 0, 0, 1]);
-			expect(result).toContain('2001:db8');
+		it('should compress all-zero address to [::]', () => {
+			expect(utils.ntoa6([0, 0, 0, 0])).toBe('[::]');
+		});
+
+		it('should compress leading zeros', () => {
+			expect(utils.ntoa6([0, 0, 0, 1])).toBe('[::1]');
+		});
+
+		it('should compress trailing zeros', () => {
+			expect(utils.ntoa6([0xfe800000, 0, 0, 0])).toBe('[fe80::]');
+		});
+
+		it('should compress the longest run for non-contiguous zero groups', () => {
+			// 0:0:1:0:0:0:0:1 — longest run is 4 zeros at positions 3–6
+			expect(utils.ntoa6(utils.aton6('0:0:1:0:0:0:0:1'))).toBe('[0:0:1::1]');
+		});
+
+		it('should not compress a single isolated zero group', () => {
+			// 1:0:2:3:4:5:6:7 — only one zero, run of 1 — no compression
+			expect(utils.ntoa6(utils.aton6('1:0:2:3:4:5:6:7'))).toBe('[1:0:2:3:4:5:6:7]');
+		});
+
+		it('should output full address when there are no zeros', () => {
+			expect(utils.ntoa6(utils.aton6('ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff'))).toBe('[ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff]');
+		});
+
+		it('should pick the first run on a tie', () => {
+			// 0:0:1:0:0:1:0:0 — three equal runs of 2 zeros, first wins
+			expect(utils.ntoa6(utils.aton6('0:0:1:0:0:1:0:0'))).toBe('[::1:0:0:1:0:0]');
+		});
+
+		it('should handle well-known addresses correctly', () => {
+			expect(utils.ntoa6(utils.aton6('2001:db8::1'))).toBe('[2001:db8::1]');
+			expect(utils.ntoa6(utils.aton6('2001:db8:0:0:1:0:0:1'))).toBe('[2001:db8::1:0:0:1]');
+		});
+
+		it('should round-trip with aton6', () => {
+			const cases = ['::1', '::', '2001:db8::1', 'fe80::'];
+			for (const ip of cases) {
+				const n = utils.aton6(ip);
+				const ntoa = utils.ntoa6(n);
+				expect(utils.aton6(ntoa.slice(1, -1))).toEqual(n);
+			}
 		});
 	});
 
