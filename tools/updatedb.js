@@ -42,7 +42,7 @@ const toLogPreview = line => line.length > 120 ? `${line.slice(0, 117)}...` : li
 const createProgressLogger = (db, step, activity) => {
 	const startedAt = Date.now();
 	let lastLogAt = startedAt;
-	const prefix = getStepPrefix(step);
+	const prefix = `${getPipelinePrefix(db)}${getStepPrefix(step)}`;
 	const label = getDatabaseLabel(db);
 
 	return {
@@ -383,7 +383,7 @@ const processCityData = (database, label, src, dest) =>
 			b.writeUInt32BE(locId >>> 0, 32);
 			b.writeInt32BE(lat, 36);
 			b.writeInt32BE(lon, 40);
-			b.writeInt32BE(area, 44);
+			b.writeUInt32BE(area, 44);
 			return b;
 		}
 
@@ -394,7 +394,7 @@ const processCityData = (database, label, src, dest) =>
 		b.writeUInt32BE(locId >>> 0, 8);
 		b.writeInt32BE(lat, 12);
 		b.writeInt32BE(lon, 16);
-		b.writeInt32BE(area, 20);
+		b.writeUInt32BE(area, 20);
 		return b;
 	});
 
