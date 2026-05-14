@@ -174,7 +174,7 @@ const getHTTPOptions = downloadUrl => {
 	const proxy = process.env.http_proxy || process.env.https_proxy;
 	if (proxy) {
 		try {
-			const HttpsProxyAgent = require('https-proxy-agent');
+			const { HttpsProxyAgent } = require('https-proxy-agent');
 			options.agent = new HttpsProxyAgent(proxy);
 		} catch (err) {
 			logGlobalError(`Proxy configured but https-proxy-agent is missing: ${err.message}`);
