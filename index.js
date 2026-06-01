@@ -105,13 +105,12 @@ const lookup4 = ip => {
 
 const lookup6 = ip => {
 	if (!cache6.mainBuffer) return null;
+	if (cmp6(ip, cache6.lastIP) > 0 || cmp6(ip, cache6.firstIP) < 0) return null;
 
 	const buffer = cache6.mainBuffer;
 	const recordSize = cache6.recordSize;
 	const locBuffer = cache4.locationBuffer;
 	const locRecordSize = cache4.locationRecordSize;
-
-	if (cmp6(ip, cache6.lastIP) > 0 || cmp6(ip, cache6.firstIP) < 0) return null;
 
 	const geoData = createGeoData();
 	let fline = 0;
@@ -292,11 +291,7 @@ module.exports = {
 			return lookup4(aton4(ip));
 		} else if (ipVersion === 6) {
 			const ipv4 = get4mapped(ip);
-			if (ipv4) {
-				return lookup4(aton4(ipv4));
-			} else {
-				return lookup6(aton6(ip));
-			}
+			return ipv4 ? lookup4(aton4(ipv4)) : lookup6(aton6(ip));
 		}
 
 		return null;
@@ -333,8 +328,7 @@ module.exports = {
 
 		return new Promise((resolve, reject) => {
 			runAsyncReload(err => {
-				if (err) reject(err);
-				else resolve();
+				if (err) reject(err); else resolve();
 			});
 		});
 	},
