@@ -1,0 +1,4 @@
+* text=auto eol=lf
+
+*.dat binary
+*.checksum text eol=lf
