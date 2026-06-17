@@ -1,6 +1,6 @@
 {
   "name": "geoip-lite2",
-  "version": "4.0.2",
+  "version": "4.0.3",
   "description": "Fast, native implementation of the GeoIP API from MaxMind in JavaScript. An improved version by Sefinek, continuously maintained.",
   "keywords": [
     "geoip",
@@ -60,7 +60,7 @@
   },
   "dependencies": {
     "adm-zip": "^0.5.17",
-    "https-proxy-agent": "^9.0.0"
+    "https-proxy-agent": "^9.1.0"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -70,5 +70,8 @@
   },
   "engines": {
     "node": ">=20.0.0"
+  },
+  "allowScripts": {
+    "unrs-resolver@1.12.2": true
   }
 }
