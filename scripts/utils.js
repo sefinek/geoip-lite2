@@ -103,14 +103,12 @@ const ipv6ToBigInt = ip => {
 	return value;
 };
 
-const bigIntToIpv6Uint32Array = value => {
-	return [
-		Number((value >> 96n) & 0xFFFFFFFFn),
-		Number((value >> 64n) & 0xFFFFFFFFn),
-		Number((value >> 32n) & 0xFFFFFFFFn),
-		Number(value & 0xFFFFFFFFn),
-	];
-};
+const bigIntToIpv6Uint32Array = value => [
+	Number((value >> 96n) & 0xFFFFFFFFn),
+	Number((value >> 64n) & 0xFFFFFFFFn),
+	Number((value >> 32n) & 0xFFFFFFFFn),
+	Number(value & 0xFFFFFFFFn),
+];
 
 const ipv6RangeFromCidr = cidr => {
 	const [ip, prefixText] = cidr.split('/');

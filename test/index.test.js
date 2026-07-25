@@ -170,7 +170,7 @@ describe('GeoIP2', () => {
 	});
 
 	describe('#testAsyncReload', () => {
-		it('should reload data asynchronously', (done) => {
+		it('should reload data asynchronously', done => {
 			const before4 = geoIp.lookup('75.82.117.180');
 			expect(before4).not.toBeNull();
 			const before6 = geoIp.lookup('::ffff:173.185.182.82');
