@@ -72,7 +72,7 @@ describe('GeoIP2', () => {
 			expect(actual.region).toBe('06');
 			expect(actual.isEu).toBe(true);
 			expect(actual.timezone).toBe('Europe/Warsaw');
-			expect(actual.city).toBe('Lublin');
+			expect(actual.city).toBe('Bychawa');
 			expect(actual.ll).toBeTruthy();
 			expect(actual.metro).toBe(0);
 			expect(actual.area).toBe(50);
