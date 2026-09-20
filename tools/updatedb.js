@@ -7,7 +7,7 @@ const https = require('node:https');
 const path = require('node:path');
 const zlib = require('node:zlib');
 const AdmZip = require('adm-zip');
-const { ipv4RangeFromCidr, ipv6RangeFromCidr } = require('../scripts/utils.js');
+const { ipv4RangeFromCidr, ipv6RangeFromCidr, NO_LOCATION_INFO } = require('../scripts/utils.js');
 
 // --- Logging ---
 
@@ -276,14 +276,14 @@ const processIPData = async (database, step, label, tmpSrc, dataDest, buildBuffe
 	let processedRows = 0;
 	let writtenRows = 0;
 	const dataFile = path.join(dataPath, dataDest);
+	const stagingFile = `${dataFile}.tmp`;
 	const tmpDataFile = path.join(tmpPath, tmpSrc);
 
-	removePathSync(dataFile);
 	ensureParentDir(dataFile);
 	logStepInfo(database, step, `Processing ${label}: source=${tmpSrc}; output=${dataDest}`);
 
 	const progress = createProgressLogger(database, step, `Processing ${label}`);
-	const datFile = fs.createWriteStream(dataFile);
+	const datFile = fs.createWriteStream(stagingFile);
 	let processingError = null;
 
 	try {
@@ -303,7 +303,13 @@ const processIPData = async (database, step, label, tmpSrc, dataDest, buildBuffe
 	}
 
 	await closeWriteStream(datFile);
-	if (processingError) throw processingError;
+
+	if (processingError) {
+		removePathSync(stagingFile);
+		throw processingError;
+	}
+
+	fs.renameSync(stagingFile, dataFile);
 	progress.done(processedRows, writtenRows);
 };
 
@@ -370,7 +376,7 @@ const processCityData = (database, label, src, dest) =>
 			return undefined;
 		}
 
-		const locId = cityLookup[Number.parseInt(fields[1], 10)];
+		const locId = cityLookup[Number.parseInt(fields[1], 10)] ?? NO_LOCATION_INFO;
 		const lat = Math.round(parseFloat(fields[7]) * 10000);
 		const lon = Math.round(parseFloat(fields[8]) * 10000);
 		const area = Number.parseInt(fields[9], 10);
@@ -402,39 +408,52 @@ const processCityDataNames = async (database, src, dest) => {
 	let linesCount = 0;
 	let malformedRows = 0;
 	const dataFile = path.join(dataPath, dest);
+	const stagingFile = `${dataFile}.tmp`;
 	const tmpDataFile = path.join(tmpPath, src);
 
-	removePathSync(dataFile);
+	ensureParentDir(dataFile);
 	logStepInfo(database, 4, `Processing city names: source=${src}; output=${dest}`);
 
-	const datFile = fs.createWriteStream(dataFile);
+	const datFile = fs.createWriteStream(stagingFile);
+	let processingError = null;
 
-	await processDataFileByLine(tmpDataFile, async line => {
-		if (line.startsWith('Copyright') || !(/\d/).test(line)) return;
+	try {
+		await processDataFileByLine(tmpDataFile, async line => {
+			if (line.startsWith('Copyright') || !(/\d/).test(line)) return;
 
-		const fields = CSVtoArray(line);
-		if (!fields) {
-			malformedRows++;
-			logStepWarn(database, 4, `Malformed city names line skipped: ${toLogPreview(line)}`);
-			return;
-		}
+			const fields = CSVtoArray(line);
+			if (!fields) {
+				malformedRows++;
+				logStepWarn(database, 4, `Malformed city names line skipped: ${toLogPreview(line)}`);
+				return;
+			}
 
-		cityLookup[Number.parseInt(fields[0], 10)] = linesCount;
+			cityLookup[Number.parseInt(fields[0], 10)] = linesCount;
 
-		const b = Buffer.alloc(88);
-		b.write(fields[4], 0);
-		b.write(fields[6], 2);
-		const metro = Number.parseInt(fields[11], 10);
-		if (metro) b.writeInt32BE(metro, 5);
-		b.write(fields[13], 9);
-		b.write(fields[12], 10);
-		b.write(fields[10], 42);
+			const b = Buffer.alloc(88);
+			b.write(fields[4], 0);
+			b.write(fields[6], 2);
+			const metro = Number.parseInt(fields[11], 10);
+			if (metro) b.writeInt32BE(metro, 5);
+			b.write(fields[13], 9);
+			b.write(fields[12], 10);
+			b.write(fields[10], 42);
 
-		await writeBuffer(datFile, b);
-		linesCount++;
-	});
+			await writeBuffer(datFile, b);
+			linesCount++;
+		});
+	} catch (err) {
+		processingError = err;
+	}
 
 	await closeWriteStream(datFile);
+
+	if (processingError) {
+		removePathSync(stagingFile);
+		throw processingError;
+	}
+
+	fs.renameSync(stagingFile, dataFile);
 	logStepInfo(database, 4, `City names completed! written=${formatNumber(linesCount)} malformed=${formatNumber(malformedRows)}`);
 };
 

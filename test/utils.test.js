@@ -170,29 +170,6 @@ describe('Utility Functions', () => {
 		});
 	});
 
-	describe('#cmp', () => {
-		it('should compare numbers correctly', () => {
-			expect(utils.cmp(1, 2)).toBe(-1);
-			expect(utils.cmp(2, 1)).toBe(1);
-			expect(utils.cmp(5, 5)).toBe(0);
-		});
-
-		it('should handle large numbers', () => {
-			expect(utils.cmp(4294967295, 4294967294)).toBe(1);
-			expect(utils.cmp(0, 4294967295)).toBe(-1);
-		});
-
-		it('should delegate to cmp6 for arrays', () => {
-			const result = utils.cmp([0, 0, 0, 1], [0, 0, 0, 2]);
-			expect(result).toBe(-1);
-		});
-
-		it('should return null for invalid types', () => {
-			expect(utils.cmp('string', 5)).toBeNull();
-			expect(utils.cmp({}, [])).toBeNull();
-		});
-	});
-
 	describe('#cmp6', () => {
 		it('should compare IPv6 arrays correctly', () => {
 			expect(utils.cmp6([0, 0, 0, 0], [0, 0, 0, 1])).toBe(-1);

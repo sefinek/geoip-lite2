@@ -153,123 +153,110 @@ const lookup6 = ip => {
 	}
 };
 
-const V6_PREFIX_1 = '0:0:0:0:0:FFFF:';
-const V6_PREFIX_2 = '::FFFF:';
+const V4_MAPPED_RE = /^(?:0:0:0:0:0:ffff:|::ffff:)(.+)$/i;
 const get4mapped = ip => {
-	const ipv6 = ip.toUpperCase();
-	if (ipv6.startsWith(V6_PREFIX_1)) return ipv6.substring(V6_PREFIX_1.length);
-	if (ipv6.startsWith(V6_PREFIX_2)) return ipv6.substring(V6_PREFIX_2.length);
-	return null;
-};
-
-const readFileBuffer = async filePath => {
-	const buffer = await fsPromises.readFile(filePath);
-	return { buffer, size: buffer.length };
+	const match = V4_MAPPED_RE.exec(ip);
+	return match ? match[1] : null;
 };
 
 const isExpectedMissingDataError = err => err?.code === 'ENOENT' || err?.code === 'EBADF';
 
+const finalizeCache4 = cache => {
+	cache.lastRecordIdx = (cache.mainBuffer.length / cache.recordSize) - 1;
+	cache.lastIP = cache.mainBuffer.readUInt32BE((cache.lastRecordIdx * cache.recordSize) + 4);
+	cache.firstIP = cache.mainBuffer.readUInt32BE(0);
+	return cache;
+};
+
+const finalizeCache6 = cache => {
+	cache.lastRecordIdx = (cache.mainBuffer.length / cache.recordSize) - 1;
+	cache.lastIP = readIp6(cache.mainBuffer, cache.lastRecordIdx, cache.recordSize, 1);
+	cache.firstIP = readIp6(cache.mainBuffer, 0, cache.recordSize, 0);
+	return cache;
+};
+
 const preloadAsync = async () => {
-	const asyncCache = { ...CONF4 };
-	let mainData;
+	const newCache = { ...CONF4 };
 
 	try {
-		const cityNamesData = await readFileBuffer(DATA_FILES.cityNames);
-		if (cityNamesData.size > 0) {
-			asyncCache.locationBuffer = cityNamesData.buffer;
-			mainData = await readFileBuffer(DATA_FILES.city);
+		const cityNamesBuffer = await fsPromises.readFile(DATA_FILES.cityNames);
+		if (cityNamesBuffer.length > 0) {
+			newCache.locationBuffer = cityNamesBuffer;
+			newCache.mainBuffer = await fsPromises.readFile(DATA_FILES.city);
 		} else {
-			mainData = await readFileBuffer(DATA_FILES.country);
-			asyncCache.recordSize = RECORD_SIZE;
+			newCache.recordSize = RECORD_SIZE;
+			newCache.mainBuffer = await fsPromises.readFile(DATA_FILES.country);
 		}
 	} catch (err) {
 		if (!isExpectedMissingDataError(err)) throw err;
-		asyncCache.locationBuffer = null;
-		mainData = await readFileBuffer(DATA_FILES.country);
-		asyncCache.recordSize = RECORD_SIZE;
+		newCache.recordSize = RECORD_SIZE;
+		newCache.mainBuffer = await fsPromises.readFile(DATA_FILES.country);
 	}
 
-	asyncCache.mainBuffer = mainData.buffer;
-	asyncCache.lastRecordIdx = (mainData.size / asyncCache.recordSize) - 1;
-	asyncCache.lastIP = asyncCache.mainBuffer.readUInt32BE((asyncCache.lastRecordIdx * asyncCache.recordSize) + 4);
-	asyncCache.firstIP = asyncCache.mainBuffer.readUInt32BE(0);
-	cache4 = asyncCache;
+	cache4 = finalizeCache4(newCache);
 };
 
 const preload = callback => {
 	if (typeof callback === 'function') return preloadAsync().then(() => callback()).catch(callback);
 
-	let mainBuffer;
+	const newCache = { ...CONF4 };
 	try {
 		const cityNamesBuffer = readFileSync(DATA_FILES.cityNames);
 		if (cityNamesBuffer.length > 0) {
-			cache4.locationBuffer = cityNamesBuffer;
-			mainBuffer = readFileSync(DATA_FILES.city);
+			newCache.locationBuffer = cityNamesBuffer;
+			newCache.mainBuffer = readFileSync(DATA_FILES.city);
 		} else {
-			cache4.locationBuffer = null;
-			cache4.recordSize = RECORD_SIZE;
-			mainBuffer = readFileSync(DATA_FILES.country);
-		}
-	} catch (err) {
-		if (err.code !== 'ENOENT' && err.code !== 'EBADF') throw err;
-		cache4.locationBuffer = null;
-		cache4.recordSize = RECORD_SIZE;
-		mainBuffer = readFileSync(DATA_FILES.country);
-	}
-
-	cache4.mainBuffer = mainBuffer;
-	cache4.lastRecordIdx = (mainBuffer.length / cache4.recordSize) - 1;
-	cache4.lastIP = cache4.mainBuffer.readUInt32BE((cache4.lastRecordIdx * cache4.recordSize) + 4);
-	cache4.firstIP = cache4.mainBuffer.readUInt32BE(0);
-};
-
-const preload6Async = async () => {
-	const asyncCache6 = { ...CONF6 };
-	let mainData;
-
-	try {
-		const cityData = await readFileBuffer(DATA_FILES.city6);
-		if (cityData.size > 0) {
-			mainData = cityData;
-		} else {
-			mainData = await readFileBuffer(DATA_FILES.country6);
-			asyncCache6.recordSize = RECORD_SIZE6;
+			newCache.recordSize = RECORD_SIZE;
+			newCache.mainBuffer = readFileSync(DATA_FILES.country);
 		}
 	} catch (err) {
 		if (!isExpectedMissingDataError(err)) throw err;
-		mainData = await readFileBuffer(DATA_FILES.country6);
-		asyncCache6.recordSize = RECORD_SIZE6;
+		newCache.recordSize = RECORD_SIZE;
+		newCache.mainBuffer = readFileSync(DATA_FILES.country);
 	}
 
-	asyncCache6.mainBuffer = mainData.buffer;
-	asyncCache6.lastRecordIdx = (mainData.size / asyncCache6.recordSize) - 1;
-	asyncCache6.lastIP = readIp6(asyncCache6.mainBuffer, asyncCache6.lastRecordIdx, asyncCache6.recordSize, 1);
-	asyncCache6.firstIP = readIp6(asyncCache6.mainBuffer, 0, asyncCache6.recordSize, 0);
-	cache6 = asyncCache6;
+	cache4 = finalizeCache4(newCache);
+};
+
+const preload6Async = async () => {
+	const newCache = { ...CONF6 };
+
+	try {
+		const city6Buffer = await fsPromises.readFile(DATA_FILES.city6);
+		if (city6Buffer.length > 0) {
+			newCache.mainBuffer = city6Buffer;
+		} else {
+			newCache.recordSize = RECORD_SIZE6;
+			newCache.mainBuffer = await fsPromises.readFile(DATA_FILES.country6);
+		}
+	} catch (err) {
+		if (!isExpectedMissingDataError(err)) throw err;
+		newCache.recordSize = RECORD_SIZE6;
+		newCache.mainBuffer = await fsPromises.readFile(DATA_FILES.country6);
+	}
+
+	cache6 = finalizeCache6(newCache);
 };
 
 const preload6 = callback => {
 	if (typeof callback === 'function') return preload6Async().then(() => callback()).catch(callback);
 
-	let mainBuffer;
+	const newCache = { ...CONF6 };
 	try {
 		const city6Buffer = readFileSync(DATA_FILES.city6);
 		if (city6Buffer.length > 0) {
-			mainBuffer = city6Buffer;
+			newCache.mainBuffer = city6Buffer;
 		} else {
-			cache6.recordSize = RECORD_SIZE6;
-			mainBuffer = readFileSync(DATA_FILES.country6);
+			newCache.recordSize = RECORD_SIZE6;
+			newCache.mainBuffer = readFileSync(DATA_FILES.country6);
 		}
 	} catch (err) {
-		if (err.code !== 'ENOENT' && err.code !== 'EBADF') throw err;
-		cache6.recordSize = RECORD_SIZE6;
-		mainBuffer = readFileSync(DATA_FILES.country6);
+		if (!isExpectedMissingDataError(err)) throw err;
+		newCache.recordSize = RECORD_SIZE6;
+		newCache.mainBuffer = readFileSync(DATA_FILES.country6);
 	}
 
-	cache6.mainBuffer = mainBuffer;
-	cache6.lastRecordIdx = (mainBuffer.length / cache6.recordSize) - 1;
-	cache6.lastIP = readIp6(cache6.mainBuffer, cache6.lastRecordIdx, cache6.recordSize, 1);
-	cache6.firstIP = readIp6(cache6.mainBuffer, 0, cache6.recordSize, 0);
+	cache6 = finalizeCache6(newCache);
 };
 
 const runAsyncReload = callback => {

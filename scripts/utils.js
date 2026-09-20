@@ -178,13 +178,6 @@ const cmp6 = (a, b) => {
 	return 0;
 };
 
-const cmp = (a, b) => {
-	if (typeof a === 'number' && typeof b === 'number') return (a < b ? -1 : (a > b ? 1 : 0));
-	if (Array.isArray(a) && Array.isArray(b)) return cmp6(a, b);
-
-	return null;
-};
-
 const NO_LOCATION_INFO = -1 >>> 0;
 
 const removeNullTerminator = str => {
@@ -244,11 +237,11 @@ module.exports = {
 	ipv4RangeFromCidr,
 	ipv6RangeFromCidr,
 	ntoa6,
-	cmp,
 	cmp6,
 	removeNullTerminator,
 	readIp6,
 	createGeoData,
 	populateGeoDataFromLocation,
+	NO_LOCATION_INFO,
 };
 
