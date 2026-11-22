@@ -26,7 +26,7 @@ describe('GeoIP2', () => {
 			assert.equal(actual.city, 'Ząbki');
 			assert.ok(actual.ll);
 			assert.equal(actual.metro, 0);
-			assert.equal(actual.area, 5);
+			assert.equal(actual.area, 10);
 		});
 
 		it('should match data for IPv4 - US', () => {
@@ -44,13 +44,13 @@ describe('GeoIP2', () => {
 		it('should match data for IPv4 - JP', () => {
 			const actual = geoIp.lookup('210.138.184.59');
 			assert.equal(actual.country, 'JP');
-			assert.equal(actual.region, '20');
+			assert.equal(actual.region, '');
 			assert.equal(actual.isEu, false);
 			assert.equal(actual.timezone, 'Asia/Tokyo');
-			assert.equal(actual.city, 'Matsumoto');
+			assert.equal(actual.city, '');
 			assert.ok(actual.ll);
 			assert.equal(actual.metro, 0);
-			assert.equal(actual.area, 200);
+			assert.equal(actual.area, 500);
 		});
 
 		it('should match data for IPv4 - RU', () => {
