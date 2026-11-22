@@ -3,8 +3,6 @@ const aton4 = a => {
 	return ((Number.parseInt(parts[0], 10) << 24) >>> 0) + ((Number.parseInt(parts[1], 10) << 16) >>> 0) + ((Number.parseInt(parts[2], 10) << 8) >>> 0) + (Number.parseInt(parts[3], 10) >>> 0);
 };
 
-const ntoa4 = n => ((n >>> 24) & 0xff) + '.' + ((n >>> 16) & 0xff) + '.' + ((n >>> 8) & 0xff) + '.' + (n & 0xff);
-
 const aton6 = a => {
 	let parts;
 	const omitStart = a.indexOf('::');
@@ -127,46 +125,6 @@ const ipv6RangeFromCidr = cidr => {
 	];
 };
 
-const ntoa6 = n => {
-	const groups = [];
-	for (let i = 0; i < 4; i++) {
-		groups.push((n[i] >>> 16) & 0xffff);
-		groups.push(n[i] & 0xffff);
-	}
-
-	let bestStart = -1, bestLen = 0, start = -1, len = 0;
-	for (let i = 0; i <= 8; i++) {
-		if (i < 8 && groups[i] === 0) {
-			if (start === -1) start = i;
-			len++;
-		} else {
-			if (len > bestLen) {
-				bestStart = start;
-				bestLen = len;
-			}
-			start = -1;
-			len = 0;
-		}
-	}
-
-	const parts = [];
-	for (let i = 0; i < 8;) {
-		if (bestLen > 1 && i === bestStart) {
-			parts.push('');
-			i += bestLen;
-		} else {
-			parts.push(groups[i].toString(16));
-			i++;
-		}
-	}
-
-	let result = parts.join(':');
-	if (result === '' || result.startsWith(':')) result = ':' + result;
-	if (result.endsWith(':')) result = result + ':';
-
-	return '[' + result + ']';
-};
-
 const cmp6 = (a, b) => {
 	for (let ii = 0; ii < 4; ii++) {
 		const av = a[ii] ?? 0;
@@ -178,11 +136,22 @@ const cmp6 = (a, b) => {
 	return 0;
 };
 
+const cmp6At = (buffer, offset, ip) => {
+	for (let i = 0; i < 4; i++) {
+		const a = buffer.readUInt32BE(offset + (i * 4));
+		const b = ip[i];
+		if (a !== b) return a < b ? -1 : 1;
+	}
+
+	return 0;
+};
+
 const NO_LOCATION_INFO = -1 >>> 0;
 
-const removeNullTerminator = str => {
-	const nullIndex = str.indexOf('\0');
-	return nullIndex === -1 ? str : str.substring(0, nullIndex);
+const readString = (buffer, start, end) => {
+	let stop = start;
+	while (stop < end && buffer[stop] !== 0) stop++;
+	return stop === start ? '' : buffer.toString('utf8', start, stop);
 };
 
 const readIp6 = (buffer, line, recordSize, ipIndex) => {
@@ -219,26 +188,25 @@ const populateGeoDataFromLocation = ({
 	if (locationId >= NO_LOCATION_INFO) return;
 
 	const locOffset = locationId * locationRecordSize;
-	geoData.country = removeNullTerminator(locationBuffer.toString('utf8', locOffset, locOffset + 2));
-	geoData.region = removeNullTerminator(locationBuffer.toString('utf8', locOffset + 2, locOffset + 5));
+	geoData.country = readString(locationBuffer, locOffset, locOffset + 2);
+	geoData.region = readString(locationBuffer, locOffset + 2, locOffset + 5);
 	geoData.metro = locationBuffer.readInt32BE(locOffset + 5);
 	geoData.ll[0] = coordBuffer.readInt32BE(latitudeOffset) / 10000;
 	geoData.ll[1] = coordBuffer.readInt32BE(longitudeOffset) / 10000;
 	geoData.area = coordBuffer.readUInt32BE(areaOffset);
-	geoData.isEu = removeNullTerminator(locationBuffer.toString('utf8', locOffset + 9, locOffset + 10)) === '1';
-	geoData.timezone = removeNullTerminator(locationBuffer.toString('utf8', locOffset + 10, locOffset + 42));
-	geoData.city = removeNullTerminator(locationBuffer.toString('utf8', locOffset + 42, locOffset + locationRecordSize));
+	geoData.isEu = locationBuffer[locOffset + 9] === 0x31;
+	geoData.timezone = readString(locationBuffer, locOffset + 10, locOffset + 42);
+	geoData.city = readString(locationBuffer, locOffset + 42, locOffset + locationRecordSize);
 };
 
 module.exports = {
 	aton4,
-	ntoa4,
 	aton6,
 	ipv4RangeFromCidr,
 	ipv6RangeFromCidr,
-	ntoa6,
 	cmp6,
-	removeNullTerminator,
+	cmp6At,
+	readString,
 	readIp6,
 	createGeoData,
 	populateGeoDataFromLocation,

@@ -18,28 +18,6 @@ describe('Utility Functions', () => {
 		});
 	});
 
-	describe('#ntoa4', () => {
-		it('should convert number to IPv4 string', () => {
-			assert.equal(utils.ntoa4(0), '0.0.0.0');
-			assert.equal(utils.ntoa4(2130706433), '127.0.0.1');
-			assert.equal(utils.ntoa4(3232235777), '192.168.1.1');
-			assert.equal(utils.ntoa4(4294967295), '255.255.255.255');
-		});
-
-		it('should handle edge cases', () => {
-			assert.equal(utils.ntoa4(16843009), '1.1.1.1');
-			assert.equal(utils.ntoa4(134744072), '8.8.8.8');
-			assert.equal(utils.ntoa4(167772160), '10.0.0.0');
-		});
-
-		it('should round-trip with aton4', () => {
-			const ips = ['1.2.3.4', '192.168.0.1', '10.20.30.40', '172.16.0.1'];
-			ips.forEach(ip => {
-				assert.equal(utils.ntoa4(utils.aton4(ip)), ip);
-			});
-		});
-	});
-
 	describe('#aton6', () => {
 		it('should convert IPv6 string to array', () => {
 			const result = utils.aton6('::1');
@@ -118,59 +96,6 @@ describe('Utility Functions', () => {
 		});
 	});
 
-	describe('#ntoa6', () => {
-		it('should wrap result in square brackets', () => {
-			const result = utils.ntoa6([0, 0, 0, 1]);
-			assert.equal(result.startsWith('['), true);
-			assert.equal(result.endsWith(']'), true);
-		});
-
-		it('should compress all-zero address to [::]', () => {
-			assert.equal(utils.ntoa6([0, 0, 0, 0]), '[::]');
-		});
-
-		it('should compress leading zeros', () => {
-			assert.equal(utils.ntoa6([0, 0, 0, 1]), '[::1]');
-		});
-
-		it('should compress trailing zeros', () => {
-			assert.equal(utils.ntoa6([0xfe800000, 0, 0, 0]), '[fe80::]');
-		});
-
-		it('should compress the longest run for non-contiguous zero groups', () => {
-			// 0:0:1:0:0:0:0:1 — longest run is 4 zeros at positions 3–6
-			assert.equal(utils.ntoa6(utils.aton6('0:0:1:0:0:0:0:1')), '[0:0:1::1]');
-		});
-
-		it('should not compress a single isolated zero group', () => {
-			// 1:0:2:3:4:5:6:7 — only one zero, run of 1 — no compression
-			assert.equal(utils.ntoa6(utils.aton6('1:0:2:3:4:5:6:7')), '[1:0:2:3:4:5:6:7]');
-		});
-
-		it('should output full address when there are no zeros', () => {
-			assert.equal(utils.ntoa6(utils.aton6('ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff')), '[ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff]');
-		});
-
-		it('should pick the first run on a tie', () => {
-			// 0:0:1:0:0:1:0:0 — three equal runs of 2 zeros, first wins
-			assert.equal(utils.ntoa6(utils.aton6('0:0:1:0:0:1:0:0')), '[::1:0:0:1:0:0]');
-		});
-
-		it('should handle well-known addresses correctly', () => {
-			assert.equal(utils.ntoa6(utils.aton6('2001:db8::1')), '[2001:db8::1]');
-			assert.equal(utils.ntoa6(utils.aton6('2001:db8:0:0:1:0:0:1')), '[2001:db8::1:0:0:1]');
-		});
-
-		it('should round-trip with aton6', () => {
-			const cases = ['::1', '::', '2001:db8::1', 'fe80::'];
-			for (const ip of cases) {
-				const n = utils.aton6(ip);
-				const ntoa = utils.ntoa6(n);
-				assert.deepEqual(utils.aton6(ntoa.slice(1, -1)), n);
-			}
-		});
-	});
-
 	describe('#cmp6', () => {
 		it('should compare IPv6 arrays correctly', () => {
 			assert.equal(utils.cmp6([0, 0, 0, 0], [0, 0, 0, 1]), -1);
@@ -195,11 +120,6 @@ describe('Utility Functions', () => {
 	});
 
 	describe('#SharedGeoHelpers', () => {
-		it('should remove null terminator suffix', () => {
-			assert.equal(utils.removeNullTerminator('abc\0def'), 'abc');
-			assert.equal(utils.removeNullTerminator('abc'), 'abc');
-		});
-
 		it('should read all 128 bits for IPv6 address', () => {
 			const buffer = Buffer.alloc(48);
 			buffer.writeUInt32BE(1, 0);
@@ -274,5 +194,26 @@ describe('Utility Functions', () => {
 			assert.equal(geoData.city, '');
 			assert.deepEqual(geoData.ll, [null, null]);
 		});
+	});
+});
+
+describe('Additional helpers', () => {
+	it('cmp6At should compare an address against a buffer record', () => {
+		const buffer = Buffer.alloc(32);
+		[1, 2, 3, 4].forEach((v, i) => buffer.writeUInt32BE(v, 16 + (i * 4)));
+
+		assert.equal(utils.cmp6At(buffer, 16, [1, 2, 3, 4]), 0);
+		assert.equal(utils.cmp6At(buffer, 16, [1, 2, 3, 5]), -1);
+		assert.equal(utils.cmp6At(buffer, 16, [0, 9, 9, 9]), 1);
+	});
+
+	it('readString should stop at the first null byte and respect the bounds', () => {
+		const buffer = Buffer.from('PL\0abcdef\0\0', 'utf8');
+
+		assert.equal(utils.readString(buffer, 0, 2), 'PL');
+		assert.equal(utils.readString(buffer, 0, 8), 'PL');
+		assert.equal(utils.readString(buffer, 3, 6), 'abc');
+		assert.equal(utils.readString(buffer, 2, 3), '');
+		assert.equal(utils.readString(Buffer.from('Łódź\0\0', 'utf8'), 0, 9), 'Łódź');
 	});
 });

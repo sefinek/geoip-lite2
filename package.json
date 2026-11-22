@@ -1,7 +1,7 @@
 {
   "name": "geoip-lite2",
   "version": "5.0.0",
-  "description": "Fast, native implementation of the GeoIP API from MaxMind in JavaScript. An improved version by Sefinek, continuously maintained.",
+  "description": "Fast IP address geolocation for Node.js using MaxMind GeoLite data. Written entirely in JavaScript, with synchronous, in-memory lookups for IPv4 and IPv6.",
   "keywords": [
     "geoip",
     "geoip2",
@@ -50,6 +50,7 @@
   ],
   "scripts": {
     "example": "node example/lookup-watch.js",
+    "benchmark": "node example/benchmark.js",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "m": "ncu -u && npm install && npm update",
@@ -63,8 +64,7 @@
     "unrs-resolver@1.12.2": true
   },
   "dependencies": {
-    "adm-zip": "^0.6.1",
-    "https-proxy-agent": "^9.1.0"
+    "adm-zip": "^0.6.1"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -72,6 +72,6 @@
     "globals": "^17.14.0"
   },
   "engines": {
-    "node": ">=22.12.0"
+    "node": ">=24.14.0"
   }
 }

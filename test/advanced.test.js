@@ -30,6 +30,11 @@ describe('Advanced geoIp Tests', () => {
 			assert.notEqual(result1, null);
 			assert.notEqual(result2, null);
 		});
+
+		it('should resolve hexadecimal IPv4-mapped IPv6 like the dotted form', () => {
+			assert.deepEqual(geoIp.lookup('::ffff:808:808'), geoIp.lookup('::ffff:8.8.8.8'));
+			assert.deepEqual(geoIp.lookup('0:0:0:0:0:ffff:101:101'), geoIp.lookup('1.1.1.1'));
+		});
 	});
 
 	describe('#PrivateIPAddresses', () => {
