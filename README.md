@@ -74,19 +74,16 @@ You can see this module in action using my [official API](https://api.sefinek.ne
 
 ## 📚 Library API
 GeoIP-Lite2 performs lookups synchronously in memory (`lookup`). It also provides async data reload methods (`reloadData`) and file watcher callbacks (`startWatchingDataUpdate`).
-All blocking file I/O is performed at startup, so all runtime lookups are fast.
-Startup may take up to 200 ms while reading and indexing data files into memory.
+All blocking file I/O is performed at startup, so all runtime lookups are fast. Startup may take up to 200 ms while reading and indexing data files into memory.
 
 ### Looking up an IP address
-If you have an IP address in dotted IPv4 notation, colon IPv6 notation, or a 32-bit unsigned integer (treated as an IPv4 address),
-pass it to the `lookup` method.
+If you have an IP address in dotted IPv4 notation, colon IPv6 notation, or a 32-bit unsigned integer (treated as an IPv4 address), pass it to the `lookup` method.
 
 ```js
 const geo = geoIp.lookup(ip);
 ```
 
-If `ip` is `undefined` or `null`, `lookup` throws a `TypeError`.
-For any other invalid input (empty string, non-IP string, non-finite or noninteger number), it returns `null`.
+If `ip` is `undefined` or `null`, `lookup` throws a `TypeError`. For any other invalid input (empty string, non-IP string, non-finite or noninteger number), it returns `null`.
 
 If the IP address was found, the `lookup` method returns an object with the following structure:
 
@@ -190,9 +187,8 @@ geoIp.reloadDataSync();
 
 
 ## ⚠️ Caveats
-This package includes the GeoLite database from MaxMind. It is not the most accurate database available,
-however it is the best free option. You can use the commercial GeoIP database from MaxMind
-by purchasing a license and converting the `.csv` files to a format supported by GeoIP-Lite2.
+This package includes the GeoLite database from MaxMind. It is not the most accurate database available, however it is the best free option.
+You can use the commercial GeoIP database from MaxMind by purchasing a license and converting the `.csv` files to a format supported by GeoIP-Lite2.
 
 The library may occasionally take up to 5 seconds to load into memory.
 This largely depends on disk load. It can take as little as 200 ms on a lightly loaded disk. This is a one-time cost.
