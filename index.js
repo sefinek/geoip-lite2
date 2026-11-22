@@ -229,47 +229,59 @@ const logReloadError = err => {
 	if (err) console.error('[geoip-lite2] Failed to reload GeoIP data:', err);
 };
 
+const lookup = ip => {
+	if (ip === undefined || ip === null) throw new TypeError('lookup(ip) requires an IP address');
+	if (typeof ip === 'number') {
+		return Number.isInteger(ip) && ip >= 0 && ip <= 0xFFFFFFFF ? lookup4(ip) : null;
+	}
+
+	if (typeof ip !== 'string') return null;
+
+	const ipVersion = isIP(ip);
+	if (ipVersion === 4) return lookup4(aton4(ip));
+	if (ipVersion === 6) return lookupIPv6String(ip);
+
+	return null;
+};
+
+const startWatchingDataUpdate = callback => {
+	const onReloaded = typeof callback === 'function' ? callback : logReloadError;
+
+	fsWatcher.makeFsWatchFilter(WATCHER_NAME, GEO_DATA_DIR, WATCHED_DATA_FILES, WATCHER_COOLDOWN_MS, change => {
+		console.log(change?.file
+			? `[geoip-lite2] Detected change in "${change.file}", reloading data...`
+			: '[geoip-lite2] Detected change in GeoIP data directory, reloading data...');
+
+		runAsyncReload(onReloaded);
+	});
+};
+
+const stopWatchingDataUpdate = () => fsWatcher.stopWatching(WATCHER_NAME);
+
+const clear = () => {
+	cache4 = EMPTY_CACHE;
+	cache6 = EMPTY_CACHE;
+};
+
+const reloadDataSync = loadCaches;
+
+const reloadData = callback => {
+	if (typeof callback === 'function') {
+		runAsyncReload(callback);
+		return;
+	}
+
+	return loadCachesAsync();
+};
+
+// Keep every export as a plain identifier: Node's cjs-module-lexer only detects named ESM imports from such a literal.
 module.exports = {
-	lookup: ip => {
-		if (ip === undefined || ip === null) throw new TypeError('lookup(ip) requires an IP address');
-		if (typeof ip === 'number') {
-			return Number.isInteger(ip) && ip >= 0 && ip <= 0xFFFFFFFF ? lookup4(ip) : null;
-		}
-
-		if (typeof ip !== 'string') return null;
-
-		const ipVersion = isIP(ip);
-		if (ipVersion === 4) return lookup4(aton4(ip));
-		if (ipVersion === 6) return lookupIPv6String(ip);
-
-		return null;
-	},
-	startWatchingDataUpdate: callback => {
-		const onReloaded = typeof callback === 'function' ? callback : logReloadError;
-
-		fsWatcher.makeFsWatchFilter(WATCHER_NAME, GEO_DATA_DIR, WATCHED_DATA_FILES, WATCHER_COOLDOWN_MS, change => {
-			console.log(change?.file
-				? `[geoip-lite2] Detected change in "${change.file}", reloading data...`
-				: '[geoip-lite2] Detected change in GeoIP data directory, reloading data...');
-
-			runAsyncReload(onReloaded);
-		});
-	},
-	stopWatchingDataUpdate: () => fsWatcher.stopWatching(WATCHER_NAME),
-	clear: () => {
-		cache4 = EMPTY_CACHE;
-		cache6 = EMPTY_CACHE;
-	},
-	reloadDataSync: loadCaches,
-	reloadData: callback => {
-		if (typeof callback === 'function') {
-			runAsyncReload(callback);
-			return;
-		}
-
-		return loadCachesAsync();
-	},
-
+	lookup,
+	startWatchingDataUpdate,
+	stopWatchingDataUpdate,
+	clear,
+	reloadDataSync,
+	reloadData,
 	version,
 };
 
