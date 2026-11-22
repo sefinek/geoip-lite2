@@ -1,4 +1,4 @@
-const { name, version } = require('../package.json');
+const { name, version, homepage } = require('../package.json');
 
 const crypto = require('node:crypto');
 const fs = require('node:fs');
@@ -11,7 +11,7 @@ const { pipeline } = require('node:stream/promises');
 const AdmZip = require('adm-zip');
 const { ipv4RangeFromCidr, ipv6RangeFromCidr, NO_LOCATION_INFO } = require('../scripts/utils.js');
 
-const USER_AGENT = `Mozilla/5.0 (compatible; ${name}/${version}; +https://github.com/sefinek/geoip-lite2)`;
+const USER_AGENT = `Mozilla/5.0 (compatible; ${name}/${version}; +${homepage})`;
 const MAXMIND_DOWNLOAD_URL = 'https://download.maxmind.com/app/geoip_download';
 
 const COUNTRY_RECORD_SIZE = 10;
