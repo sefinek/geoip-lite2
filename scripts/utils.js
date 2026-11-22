@@ -1,6 +1,18 @@
+// Expects a validated dotted-quad string (callers use isIP or strict validation first). Avoids split/parseInt allocations on the hot path.
 const aton4 = a => {
-	const parts = a.split('.');
-	return ((Number.parseInt(parts[0], 10) << 24) >>> 0) + ((Number.parseInt(parts[1], 10) << 16) >>> 0) + ((Number.parseInt(parts[2], 10) << 8) >>> 0) + (Number.parseInt(parts[3], 10) >>> 0);
+	let result = 0;
+	let octet = 0;
+	for (let i = 0; i < a.length; i++) {
+		const c = a.charCodeAt(i);
+		if (c === 46) {
+			result = (result << 8) | octet;
+			octet = 0;
+		} else {
+			octet = (octet * 10) + (c - 48);
+		}
+	}
+
+	return ((result << 8) | octet) >>> 0;
 };
 
 const aton6 = a => {
@@ -30,13 +42,14 @@ const aton6 = a => {
 	];
 };
 
+const OCTET_RE = /^\d{1,3}$/;
+
 const ipv4ToUint32Strict = ip => {
 	const octets = ip.split('.');
 	if (octets.length !== 4) throw new TypeError(`Invalid IPv4 address: ${ip}`);
 
 	for (let i = 0; i < octets.length; i++) {
-		const octet = Number.parseInt(octets[i], 10);
-		if (!Number.isInteger(octet) || octet < 0 || octet > 255) throw new TypeError(`Invalid IPv4 address: ${ip}`);
+		if (!OCTET_RE.test(octets[i]) || Number(octets[i]) > 255) throw new TypeError(`Invalid IPv4 address: ${ip}`);
 	}
 
 	return aton4(ip);

@@ -16,6 +16,20 @@ describe('Utility Functions', () => {
 			assert.equal(utils.aton4('8.8.8.8'), 134744072);
 			assert.equal(utils.aton4('10.0.0.0'), 167772160);
 		});
+
+		it('should match a reference split/parseInt implementation', () => {
+			const reference = a => {
+				const p = a.split('.').map(Number);
+				return (((p[0] << 24) >>> 0) + ((p[1] << 16) >>> 0) + ((p[2] << 8) >>> 0) + p[3]) >>> 0;
+			};
+
+			let seed = 12345;
+			for (let i = 0; i < 20000; i++) {
+				seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+				const ip = `${seed >>> 24}.${(seed >>> 16) & 255}.${(seed >>> 8) & 255}.${seed & 255}`;
+				assert.equal(utils.aton4(ip), reference(ip), ip);
+			}
+		});
 	});
 
 	describe('#aton6', () => {
@@ -74,6 +88,9 @@ describe('Utility Functions', () => {
 		it('should throw for invalid IPv4 CIDR', () => {
 			assert.throws(() => utils.ipv4RangeFromCidr('10.0.0/8'), TypeError);
 			assert.throws(() => utils.ipv4RangeFromCidr('10.0.0.1/33'), TypeError);
+			assert.throws(() => utils.ipv4RangeFromCidr('1.2.3.4x/32'), TypeError);
+			assert.throws(() => utils.ipv4RangeFromCidr('1.2.3.256/32'), TypeError);
+			assert.throws(() => utils.ipv4RangeFromCidr('1.2.3.-1/32'), TypeError);
 		});
 	});
 

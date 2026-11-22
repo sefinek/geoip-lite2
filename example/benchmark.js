@@ -72,11 +72,11 @@ const main = async () => {
 
 	const results = scenarios.map(([label, inputs]) => ({ label, count: inputs.length, ...measureLookups(geoIp, inputs) }));
 
-	const reloads = [await measureReload('reloadDataSync()', () => geoIp.reloadDataSync()), await measureReload('reloadData()', () => geoIp.reloadData())];
+	const reloads = [await measureReload('reloadDataSync()', () => geoIp.reloadDataSync()), await measureReload('reloadData()', () => new Promise((resolve, reject) => geoIp.reloadData(err => (err ? reject(err) : resolve()))))];
 
 	console.log(`Target:   ${target}`);
 	console.log(`Node.js:  ${process.version}`);
-	console.log(`Version:  ${geoIp.version}`);
+	console.log(`Version:  ${geoIp.version ?? 'n/a'}`);
 	console.log(`Load:     ${loadMs.toFixed(0)} ms, RSS +${formatMb(rssAfter - rssBefore)} MB`);
 	console.log(`Rounds:   ${ROUNDS} (median)`);
 	console.log('');

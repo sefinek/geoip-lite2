@@ -204,15 +204,19 @@ const lookup6 = ip => {
 	return null;
 };
 
-const V4_MAPPED_DOTTED_RE = /^(?:0{1,4}:){5}ffff:(\d{1,3}(?:\.\d{1,3}){3})$|^::ffff:(\d{1,3}(?:\.\d{1,3}){3})$/i;
+const V4_MAPPED_PREFIX_RE = /^(?:(?:0{1,4}:){5}|::)ffff:(.+)$/i;
 
 // IPv4-mapped addresses (::ffff:a.b.c.d or ::ffff:abcd:efgh) are looked up as IPv4. The address is parsed only once.
+// The input has already been validated by isIP, so whatever follows the prefix is a valid dotted IPv4 address.
 const lookupIPv6String = ip => {
-	const dotted = V4_MAPPED_DOTTED_RE.exec(ip);
-	if (dotted) return lookup4(aton4(dotted[1] ?? dotted[2]));
+	const hasDots = ip.includes('.');
+	if (hasDots) {
+		const dotted = V4_MAPPED_PREFIX_RE.exec(ip);
+		if (dotted) return lookup4(aton4(dotted[1]));
+	}
 
 	const words = aton6(ip);
-	if (words[0] === 0 && words[1] === 0 && words[2] === 0xFFFF && !ip.includes('.')) return lookup4(words[3]);
+	if (!hasDots && words[0] === 0 && words[1] === 0 && words[2] === 0xFFFF) return lookup4(words[3]);
 
 	return lookup6(words);
 };
