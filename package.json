@@ -59,10 +59,6 @@
     "updatedb-debug": "node tools/updatedb.js debug",
     "updatedb-force": "node tools/updatedb.js force"
   },
-  "allowScripts": {
-    "@parcel/watcher@2.6.0": true,
-    "unrs-resolver@1.12.2": true
-  },
   "dependencies": {
     "adm-zip": "^0.6.1"
   },
