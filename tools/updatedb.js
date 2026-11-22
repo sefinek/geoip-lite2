@@ -549,7 +549,7 @@ const updateChecksum = async (ctx, database) => {
 	if (!database.checkValue) return;
 
 	try {
-		await fsp.writeFile(path.join(ctx.dataPath, `${database.type}.checksum`), database.checkValue, 'utf8');
+		await fsp.writeFile(path.join(ctx.dataPath, `${database.type}.checksum`), `${database.checkValue}\n`, 'utf8');
 	} catch (err) {
 		createLogger(database, 5).error(`Failed to save the checksum: ${err.message}`);
 	}
