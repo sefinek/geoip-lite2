@@ -1,6 +1,6 @@
 {
   "name": "geoip-lite2",
-  "version": "4.0.5",
+  "version": "5.0.0",
   "description": "Fast, native implementation of the GeoIP API from MaxMind in JavaScript. An improved version by Sefinek, continuously maintained.",
   "keywords": [
     "geoip",
@@ -53,10 +53,14 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "m": "ncu -u && npm install && npm update",
-    "test": "jest test",
+    "test": "node --test",
     "updatedb": "node tools/updatedb.js",
     "updatedb-debug": "node tools/updatedb.js debug",
     "updatedb-force": "node tools/updatedb.js force"
+  },
+  "allowScripts": {
+    "@parcel/watcher@2.6.0": true,
+    "unrs-resolver@1.12.2": true
   },
   "dependencies": {
     "adm-zip": "^0.6.1",
@@ -64,15 +68,10 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@jest/globals": "^30.5.2",
-    "globals": "^17.14.0",
-    "jest": "^30.5.2"
+    "eslint": "^10.15.0",
+    "globals": "^17.14.0"
   },
   "engines": {
-    "node": ">=20.0.0"
-  },
-  "allowScripts": {
-    "unrs-resolver@1.12.2": true,
-    "@parcel/watcher@2.6.0": true
+    "node": ">=22.12.0"
   }
 }

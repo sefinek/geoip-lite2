@@ -1,40 +1,41 @@
-const { describe, expect, it } = require('@jest/globals');
+const { describe, it } = require('node:test');
+const assert = require('node:assert/strict');
 const utils = require('../scripts/utils.js');
 
 describe('Utility Functions', () => {
 	describe('#aton4', () => {
 		it('should convert IPv4 string to number', () => {
-			expect(utils.aton4('0.0.0.0')).toBe(0);
-			expect(utils.aton4('127.0.0.1')).toBe(2130706433);
-			expect(utils.aton4('192.168.1.1')).toBe(3232235777);
-			expect(utils.aton4('255.255.255.255')).toBe(4294967295);
+			assert.equal(utils.aton4('0.0.0.0'), 0);
+			assert.equal(utils.aton4('127.0.0.1'), 2130706433);
+			assert.equal(utils.aton4('192.168.1.1'), 3232235777);
+			assert.equal(utils.aton4('255.255.255.255'), 4294967295);
 		});
 
 		it('should handle edge cases', () => {
-			expect(utils.aton4('1.1.1.1')).toBe(16843009);
-			expect(utils.aton4('8.8.8.8')).toBe(134744072);
-			expect(utils.aton4('10.0.0.0')).toBe(167772160);
+			assert.equal(utils.aton4('1.1.1.1'), 16843009);
+			assert.equal(utils.aton4('8.8.8.8'), 134744072);
+			assert.equal(utils.aton4('10.0.0.0'), 167772160);
 		});
 	});
 
 	describe('#ntoa4', () => {
 		it('should convert number to IPv4 string', () => {
-			expect(utils.ntoa4(0)).toBe('0.0.0.0');
-			expect(utils.ntoa4(2130706433)).toBe('127.0.0.1');
-			expect(utils.ntoa4(3232235777)).toBe('192.168.1.1');
-			expect(utils.ntoa4(4294967295)).toBe('255.255.255.255');
+			assert.equal(utils.ntoa4(0), '0.0.0.0');
+			assert.equal(utils.ntoa4(2130706433), '127.0.0.1');
+			assert.equal(utils.ntoa4(3232235777), '192.168.1.1');
+			assert.equal(utils.ntoa4(4294967295), '255.255.255.255');
 		});
 
 		it('should handle edge cases', () => {
-			expect(utils.ntoa4(16843009)).toBe('1.1.1.1');
-			expect(utils.ntoa4(134744072)).toBe('8.8.8.8');
-			expect(utils.ntoa4(167772160)).toBe('10.0.0.0');
+			assert.equal(utils.ntoa4(16843009), '1.1.1.1');
+			assert.equal(utils.ntoa4(134744072), '8.8.8.8');
+			assert.equal(utils.ntoa4(167772160), '10.0.0.0');
 		});
 
 		it('should round-trip with aton4', () => {
 			const ips = ['1.2.3.4', '192.168.0.1', '10.20.30.40', '172.16.0.1'];
 			ips.forEach(ip => {
-				expect(utils.ntoa4(utils.aton4(ip))).toBe(ip);
+				assert.equal(utils.ntoa4(utils.aton4(ip)), ip);
 			});
 		});
 	});
@@ -42,122 +43,122 @@ describe('Utility Functions', () => {
 	describe('#aton6', () => {
 		it('should convert IPv6 string to array', () => {
 			const result = utils.aton6('::1');
-			expect(result).toBeInstanceOf(Array);
-			expect(result.length).toBe(4);
+			assert.ok(result instanceof Array);
+			assert.equal(result.length, 4);
 			// ::1 should convert to an array of 4 numbers
-			expect(result[3]).toBe(1);
+			assert.equal(result[3], 1);
 		});
 
 		it('should handle full IPv6 addresses', () => {
 			const result = utils.aton6('2001:0db8:0000:0000:0000:0000:0000:0001');
-			expect(result).toBeInstanceOf(Array);
-			expect(result.length).toBe(4);
+			assert.ok(result instanceof Array);
+			assert.equal(result.length, 4);
 		});
 
 		it('should handle compressed IPv6 addresses', () => {
 			const result = utils.aton6('2001:db8::1');
-			expect(result).toBeInstanceOf(Array);
-			expect(result.length).toBe(4);
+			assert.ok(result instanceof Array);
+			assert.equal(result.length, 4);
 		});
 
 		it('should handle IPv6 with trailing colon', () => {
 			const result = utils.aton6('fe80::');
-			expect(result).toBeInstanceOf(Array);
-			expect(result.length).toBe(4);
+			assert.ok(result instanceof Array);
+			assert.equal(result.length, 4);
 		});
 
 		it('should return identical output for equivalent compressed and full IPv6 forms', () => {
 			const compressed = utils.aton6('2607:f0d0:1002:51::4');
 			const expanded = utils.aton6('2607:f0d0:1002:0051:0000:0000:0000:0004');
-			expect(compressed).toEqual(expanded);
+			assert.deepEqual(compressed, expanded);
 		});
 
 		it('should correctly expand omitted middle zero groups', () => {
 			const actual = utils.aton6('2001:db8:1::2');
 			const expected = utils.aton6('2001:0db8:0001:0000:0000:0000:0000:0002');
-			expect(actual).toEqual(expected);
+			assert.deepEqual(actual, expected);
 		});
 	});
 
 	describe('#ipv4RangeFromCidr', () => {
 		it('should convert IPv4 CIDR to start/end range', () => {
 			const [start, end] = utils.ipv4RangeFromCidr('192.168.1.10/24');
-			expect(start).toBe(utils.aton4('192.168.1.0'));
-			expect(end).toBe(utils.aton4('192.168.1.255'));
+			assert.equal(start, utils.aton4('192.168.1.0'));
+			assert.equal(end, utils.aton4('192.168.1.255'));
 		});
 
 		it('should handle /0 full range', () => {
 			const [start, end] = utils.ipv4RangeFromCidr('0.0.0.0/0');
-			expect(start).toBe(0);
-			expect(end).toBe(4294967295);
+			assert.equal(start, 0);
+			assert.equal(end, 4294967295);
 		});
 
 		it('should throw for invalid IPv4 CIDR', () => {
-			expect(() => utils.ipv4RangeFromCidr('10.0.0/8')).toThrow(TypeError);
-			expect(() => utils.ipv4RangeFromCidr('10.0.0.1/33')).toThrow(TypeError);
+			assert.throws(() => utils.ipv4RangeFromCidr('10.0.0/8'), TypeError);
+			assert.throws(() => utils.ipv4RangeFromCidr('10.0.0.1/33'), TypeError);
 		});
 	});
 
 	describe('#ipv6RangeFromCidr', () => {
 		it('should convert IPv6 CIDR to start/end range', () => {
 			const [start, end] = utils.ipv6RangeFromCidr('2001:db8::/126');
-			expect(start).toEqual(utils.aton6('2001:db8::'));
-			expect(end).toEqual(utils.aton6('2001:db8::3'));
+			assert.deepEqual(start, utils.aton6('2001:db8::'));
+			assert.deepEqual(end, utils.aton6('2001:db8::3'));
 		});
 
 		it('should handle /128 as a single-address range', () => {
 			const [start, end] = utils.ipv6RangeFromCidr('2001:db8::1/128');
-			expect(start).toEqual(utils.aton6('2001:db8::1'));
-			expect(end).toEqual(utils.aton6('2001:db8::1'));
+			assert.deepEqual(start, utils.aton6('2001:db8::1'));
+			assert.deepEqual(end, utils.aton6('2001:db8::1'));
 		});
 
 		it('should throw for invalid IPv6 CIDR', () => {
-			expect(() => utils.ipv6RangeFromCidr('2001:db8::/129')).toThrow(TypeError);
-			expect(() => utils.ipv6RangeFromCidr('2001:::1/64')).toThrow(TypeError);
+			assert.throws(() => utils.ipv6RangeFromCidr('2001:db8::/129'), TypeError);
+			assert.throws(() => utils.ipv6RangeFromCidr('2001:::1/64'), TypeError);
 		});
 	});
 
 	describe('#ntoa6', () => {
 		it('should wrap result in square brackets', () => {
 			const result = utils.ntoa6([0, 0, 0, 1]);
-			expect(result.startsWith('[')).toBe(true);
-			expect(result.endsWith(']')).toBe(true);
+			assert.equal(result.startsWith('['), true);
+			assert.equal(result.endsWith(']'), true);
 		});
 
 		it('should compress all-zero address to [::]', () => {
-			expect(utils.ntoa6([0, 0, 0, 0])).toBe('[::]');
+			assert.equal(utils.ntoa6([0, 0, 0, 0]), '[::]');
 		});
 
 		it('should compress leading zeros', () => {
-			expect(utils.ntoa6([0, 0, 0, 1])).toBe('[::1]');
+			assert.equal(utils.ntoa6([0, 0, 0, 1]), '[::1]');
 		});
 
 		it('should compress trailing zeros', () => {
-			expect(utils.ntoa6([0xfe800000, 0, 0, 0])).toBe('[fe80::]');
+			assert.equal(utils.ntoa6([0xfe800000, 0, 0, 0]), '[fe80::]');
 		});
 
 		it('should compress the longest run for non-contiguous zero groups', () => {
 			// 0:0:1:0:0:0:0:1 — longest run is 4 zeros at positions 3–6
-			expect(utils.ntoa6(utils.aton6('0:0:1:0:0:0:0:1'))).toBe('[0:0:1::1]');
+			assert.equal(utils.ntoa6(utils.aton6('0:0:1:0:0:0:0:1')), '[0:0:1::1]');
 		});
 
 		it('should not compress a single isolated zero group', () => {
 			// 1:0:2:3:4:5:6:7 — only one zero, run of 1 — no compression
-			expect(utils.ntoa6(utils.aton6('1:0:2:3:4:5:6:7'))).toBe('[1:0:2:3:4:5:6:7]');
+			assert.equal(utils.ntoa6(utils.aton6('1:0:2:3:4:5:6:7')), '[1:0:2:3:4:5:6:7]');
 		});
 
 		it('should output full address when there are no zeros', () => {
-			expect(utils.ntoa6(utils.aton6('ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff'))).toBe('[ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff]');
+			assert.equal(utils.ntoa6(utils.aton6('ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff')), '[ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff]');
 		});
 
 		it('should pick the first run on a tie', () => {
 			// 0:0:1:0:0:1:0:0 — three equal runs of 2 zeros, first wins
-			expect(utils.ntoa6(utils.aton6('0:0:1:0:0:1:0:0'))).toBe('[::1:0:0:1:0:0]');
+			assert.equal(utils.ntoa6(utils.aton6('0:0:1:0:0:1:0:0')), '[::1:0:0:1:0:0]');
 		});
 
 		it('should handle well-known addresses correctly', () => {
-			expect(utils.ntoa6(utils.aton6('2001:db8::1'))).toBe('[2001:db8::1]');
-			expect(utils.ntoa6(utils.aton6('2001:db8:0:0:1:0:0:1'))).toBe('[2001:db8::1:0:0:1]');
+			assert.equal(utils.ntoa6(utils.aton6('2001:db8::1')), '[2001:db8::1]');
+			assert.equal(utils.ntoa6(utils.aton6('2001:db8:0:0:1:0:0:1')), '[2001:db8::1:0:0:1]');
 		});
 
 		it('should round-trip with aton6', () => {
@@ -165,38 +166,38 @@ describe('Utility Functions', () => {
 			for (const ip of cases) {
 				const n = utils.aton6(ip);
 				const ntoa = utils.ntoa6(n);
-				expect(utils.aton6(ntoa.slice(1, -1))).toEqual(n);
+				assert.deepEqual(utils.aton6(ntoa.slice(1, -1)), n);
 			}
 		});
 	});
 
 	describe('#cmp6', () => {
 		it('should compare IPv6 arrays correctly', () => {
-			expect(utils.cmp6([0, 0, 0, 0], [0, 0, 0, 1])).toBe(-1);
-			expect(utils.cmp6([0, 0, 0, 1], [0, 0, 0, 0])).toBe(1);
-			expect(utils.cmp6([5, 10, 15, 20], [5, 10, 15, 20])).toBe(0);
+			assert.equal(utils.cmp6([0, 0, 0, 0], [0, 0, 0, 1]), -1);
+			assert.equal(utils.cmp6([0, 0, 0, 1], [0, 0, 0, 0]), 1);
+			assert.equal(utils.cmp6([5, 10, 15, 20], [5, 10, 15, 20]), 0);
 		});
 
 		it('should compare first element priority', () => {
-			expect(utils.cmp6([1, 100, 999, 999], [2, 0, 0, 0])).toBe(-1);
-			expect(utils.cmp6([2, 0, 0, 0], [1, 100, 999, 999])).toBe(1);
+			assert.equal(utils.cmp6([1, 100, 999, 999], [2, 0, 0, 0]), -1);
+			assert.equal(utils.cmp6([2, 0, 0, 0], [1, 100, 999, 999]), 1);
 		});
 
 		it('should handle equal first elements', () => {
-			expect(utils.cmp6([1, 2, 0, 0], [1, 3, 0, 0])).toBe(-1);
-			expect(utils.cmp6([1, 3, 0, 0], [1, 2, 0, 0])).toBe(1);
+			assert.equal(utils.cmp6([1, 2, 0, 0], [1, 3, 0, 0]), -1);
+			assert.equal(utils.cmp6([1, 3, 0, 0], [1, 2, 0, 0]), 1);
 		});
 
 		it('should compare lower 64 bits when upper 64 bits are equal', () => {
-			expect(utils.cmp6([638054608, 268566609, 0, 4], [638054608, 268566609, 0, 5])).toBe(-1);
-			expect(utils.cmp6([638054608, 268566609, 4, 4], [638054608, 268566609, 0, 4])).toBe(1);
+			assert.equal(utils.cmp6([638054608, 268566609, 0, 4], [638054608, 268566609, 0, 5]), -1);
+			assert.equal(utils.cmp6([638054608, 268566609, 4, 4], [638054608, 268566609, 0, 4]), 1);
 		});
 	});
 
 	describe('#SharedGeoHelpers', () => {
 		it('should remove null terminator suffix', () => {
-			expect(utils.removeNullTerminator('abc\0def')).toBe('abc');
-			expect(utils.removeNullTerminator('abc')).toBe('abc');
+			assert.equal(utils.removeNullTerminator('abc\0def'), 'abc');
+			assert.equal(utils.removeNullTerminator('abc'), 'abc');
 		});
 
 		it('should read all 128 bits for IPv6 address', () => {
@@ -207,7 +208,7 @@ describe('Utility Functions', () => {
 			buffer.writeUInt32BE(4, 12);
 
 			const ip = utils.readIp6(buffer, 0, 48, 0);
-			expect(ip).toEqual([1, 2, 3, 4]);
+			assert.deepEqual(ip, [1, 2, 3, 4]);
 		});
 
 		it('should create independent geo data objects', () => {
@@ -215,8 +216,8 @@ describe('Utility Functions', () => {
 			const second = utils.createGeoData();
 
 			first.country = 'PL';
-			expect(second.country).toBe('');
-			expect(first).not.toBe(second);
+			assert.equal(second.country, '');
+			assert.notEqual(first, second);
 		});
 
 		it('should populate geo data from location buffers', () => {
@@ -246,14 +247,14 @@ describe('Utility Functions', () => {
 				areaOffset: 20,
 			});
 
-			expect(geoData.country).toBe('US');
-			expect(geoData.region).toBe('NY');
-			expect(geoData.metro).toBe(501);
-			expect(geoData.isEu).toBe(false);
-			expect(geoData.timezone).toBe('America/New_York');
-			expect(geoData.city).toBe('New York');
-			expect(geoData.ll).toEqual([40.7128, -74.006]);
-			expect(geoData.area).toBe(20);
+			assert.equal(geoData.country, 'US');
+			assert.equal(geoData.region, 'NY');
+			assert.equal(geoData.metro, 501);
+			assert.equal(geoData.isEu, false);
+			assert.equal(geoData.timezone, 'America/New_York');
+			assert.equal(geoData.city, 'New York');
+			assert.deepEqual(geoData.ll, [40.7128, -74.006]);
+			assert.equal(geoData.area, 20);
 		});
 
 		it('should skip fill when locationId has no location marker', () => {
@@ -269,9 +270,9 @@ describe('Utility Functions', () => {
 				areaOffset: 20,
 			});
 
-			expect(geoData.country).toBe('');
-			expect(geoData.city).toBe('');
-			expect(geoData.ll).toEqual([null, null]);
+			assert.equal(geoData.country, '');
+			assert.equal(geoData.city, '');
+			assert.deepEqual(geoData.ll, [null, null]);
 		});
 	});
 });

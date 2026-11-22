@@ -1,107 +1,93 @@
-const { afterEach, beforeEach, describe, expect, it, jest: jestGlobals } = require('@jest/globals');
+const { describe, it, beforeEach, afterEach, mock } = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
 const { join } = require('node:path');
+
+const fsWatcherPath = require.resolve('../scripts/fsWatcher.js');
+
+const makeWatcher = () => {
+	const watcher = { close: mock.fn() };
+	watcher.on = mock.fn(() => watcher);
+	return watcher;
+};
 
 describe('fsWatcher', () => {
 	beforeEach(() => {
-		jestGlobals.resetModules();
-		jestGlobals.useFakeTimers();
+		delete require.cache[fsWatcherPath];
+		mock.timers.enable({ apis: ['setTimeout'] });
 	});
 
 	afterEach(() => {
-		jestGlobals.useRealTimers();
-		jestGlobals.restoreAllMocks();
+		mock.timers.reset();
+		mock.restoreAll();
+		delete require.cache[fsWatcherPath];
 	});
 
 	it('should debounce watch events and emit the latest change details', () => {
 		let onWatchEvent;
-		const watcher = {
-			close: jestGlobals.fn(),
-			on: jestGlobals.fn().mockReturnThis(),
-		};
-		const watch = jestGlobals.fn((_directory, callback) => {
+		mock.method(fs, 'watch', (_directory, callback) => {
 			onWatchEvent = callback;
-			return watcher;
+			return makeWatcher();
 		});
 
-		jestGlobals.doMock('node:fs', () => ({ watch }));
 		const fsWatcher = require('../scripts/fsWatcher.js');
-		const callback = jestGlobals.fn();
+		const callback = mock.fn();
 
 		fsWatcher.makeFsWatchFilter('debounceWatcher', '/data', 200, callback);
 
 		onWatchEvent('rename', 'geoip-city.dat');
 		onWatchEvent('change', 'geoip-country.dat');
 
-		jestGlobals.advanceTimersByTime(199);
-		expect(callback).not.toHaveBeenCalled();
+		mock.timers.tick(199);
+		assert.equal(callback.mock.callCount(), 0);
 
-		jestGlobals.advanceTimersByTime(1);
-		expect(callback).toHaveBeenCalledTimes(1);
-		expect(callback).toHaveBeenCalledWith({
+		mock.timers.tick(1);
+		assert.equal(callback.mock.callCount(), 1);
+		assert.deepEqual(callback.mock.calls[0].arguments, [{
 			event: 'change',
 			file: 'geoip-country.dat',
 			path: join('/data', 'geoip-country.dat'),
-		});
+		}]);
 	});
 
 	it('should filter events to requested files', () => {
 		let onWatchEvent;
-		const watcher = {
-			close: jestGlobals.fn(),
-			on: jestGlobals.fn().mockReturnThis(),
-		};
-		const watch = jestGlobals.fn((_directory, callback) => {
+		mock.method(fs, 'watch', (_directory, callback) => {
 			onWatchEvent = callback;
-			return watcher;
+			return makeWatcher();
 		});
 
-		jestGlobals.doMock('node:fs', () => ({ watch }));
 		const fsWatcher = require('../scripts/fsWatcher.js');
-		const callback = jestGlobals.fn();
+		const callback = mock.fn();
 
 		fsWatcher.makeFsWatchFilter('fileFilterWatcher', '/data', ['geoip-city.dat'], 100, callback);
 
 		onWatchEvent('rename', 'geoip-country.dat');
-		jestGlobals.advanceTimersByTime(100);
-		expect(callback).not.toHaveBeenCalled();
+		mock.timers.tick(100);
+		assert.equal(callback.mock.callCount(), 0);
 
 		onWatchEvent('rename', 'geoip-city.dat');
-		jestGlobals.advanceTimersByTime(100);
-		expect(callback).toHaveBeenCalledTimes(1);
+		mock.timers.tick(100);
+		assert.equal(callback.mock.callCount(), 1);
 	});
 
 	it('should close previous watcher when re-registering the same watcher name', () => {
-		let firstHandler;
-		let secondHandler;
-		const firstWatcher = {
-			close: jestGlobals.fn(),
-			on: jestGlobals.fn().mockReturnThis(),
-		};
-		const secondWatcher = {
-			close: jestGlobals.fn(),
-			on: jestGlobals.fn().mockReturnThis(),
-		};
-		let call = 0;
-		const watch = jestGlobals.fn((_directory, callback) => {
-			call++;
-			if (call === 1) {
-				firstHandler = callback;
-				return firstWatcher;
-			}
-			secondHandler = callback;
-			return secondWatcher;
+		const handlers = [];
+		const watchers = [makeWatcher(), makeWatcher()];
+		mock.method(fs, 'watch', (_directory, callback) => {
+			handlers.push(callback);
+			return watchers[handlers.length - 1];
 		});
 
-		jestGlobals.doMock('node:fs', () => ({ watch }));
 		const fsWatcher = require('../scripts/fsWatcher.js');
-		const callback = jestGlobals.fn();
+		const callback = mock.fn();
 
 		fsWatcher.makeFsWatchFilter('sameNameWatcher', '/data', 100, callback);
 		fsWatcher.makeFsWatchFilter('sameNameWatcher', '/data', 100, callback);
 
-		expect(firstWatcher.close).toHaveBeenCalledTimes(1);
-		expect(secondWatcher.close).not.toHaveBeenCalled();
-		expect(typeof firstHandler).toBe('function');
-		expect(typeof secondHandler).toBe('function');
+		assert.equal(watchers[0].close.mock.callCount(), 1);
+		assert.equal(watchers[1].close.mock.callCount(), 0);
+		assert.equal(typeof handlers[0], 'function');
+		assert.equal(typeof handlers[1], 'function');
 	});
 });

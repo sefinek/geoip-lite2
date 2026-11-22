@@ -1,6 +1,6 @@
 <div align="center">
-    <a href="https://cdn.sefinek.net/images/npm/geoip-lite2/banner.png?v=4.0.0-alpha.0" target="_blank" title="Full screen">
-        <img src="https://cdn.sefinek.net/images/npm/geoip-lite2/banner.png?v=4.0.0-alpha.0" alt="geoip-lite2 banner">
+    <a href="https://cdn.sefinek.net/images/npm/geoip-lite2/banner.png" target="_blank" title="Full screen">
+        <img src="https://cdn.sefinek.net/images/npm/geoip-lite2/banner.png" alt="geoip-lite2 banner">
     </a>
     <br>
     <p>
@@ -18,7 +18,7 @@
 # 🚀 Improved GeoIP Module by [Sefinek](https://sefinek.net)
 Actively maintained and optimized fork of [geoip-lite](https://github.com/geoip-lite/node-geoip), originally created by [Philip Tellis](AUTHORS).
 Fully native JS implementation with synchronous, in-memory lookups for IPv4 and IPv6.
-Includes automated test coverage using [Jest](https://www.npmjs.com/package/jest).
+Includes automated test coverage using the built-in Node.js test runner.
 
 > [!WARNING]
 > Remember to regularly update the MaxMind database! You will need a license key for this.

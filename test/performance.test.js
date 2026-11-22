@@ -1,4 +1,5 @@
-const { describe, expect, it } = require('@jest/globals');
+const { describe, it } = require('node:test');
+const assert = require('node:assert/strict');
 const geoIp = require('../index.js');
 
 const strictPerf = process.env.STRICT_PERF_TESTS === '1';
@@ -19,9 +20,9 @@ const benchmark = (iterations, fn) => {
 
 const expectPerfUnder = (value, limit) => {
 	if (strictPerf) {
-		expect(value).toBeLessThan(limit);
+		assert.ok(value < limit);
 	} else {
-		expect(value).toBeGreaterThanOrEqual(0);
+		assert.ok(value >= 0);
 	}
 };
 
@@ -30,10 +31,10 @@ describe('Performance Tests', () => {
 		it('should perform stable IPv4 lookups', () => {
 			const iterations = 1000;
 			const result = geoIp.lookup('8.8.8.8');
-			expect(result).not.toBeNull();
+			assert.notEqual(result, null);
 
 			const stats = benchmark(iterations, () => {
-				expect(geoIp.lookup('8.8.8.8')).toEqual(result);
+				assert.deepEqual(geoIp.lookup('8.8.8.8'), result);
 			});
 
 			expectPerfUnder(stats.perOpMs, 1);
@@ -42,10 +43,10 @@ describe('Performance Tests', () => {
 		it('should perform stable IPv6 lookups', () => {
 			const iterations = 1000;
 			const result = geoIp.lookup('2001:4860:4860::8888');
-			expect(result).not.toBeNull();
+			assert.notEqual(result, null);
 
 			const stats = benchmark(iterations, () => {
-				expect(geoIp.lookup('2001:4860:4860::8888')).toEqual(result);
+				assert.deepEqual(geoIp.lookup('2001:4860:4860::8888'), result);
 			});
 
 			expectPerfUnder(stats.perOpMs, 2);
@@ -64,7 +65,7 @@ describe('Performance Tests', () => {
 			const stats = benchmark(iterations, i => {
 				const ip = ips[i % ips.length];
 				const result = geoIp.lookup(ip);
-				expect(result === null || typeof result === 'object').toBe(true);
+				assert.equal(result === null || typeof result === 'object', true);
 			});
 
 			expectPerfUnder(stats.perOpMs, 2);
@@ -79,7 +80,7 @@ describe('Performance Tests', () => {
 			for (let i = 0; i < iterations; i++) {
 				const ip = ips[i % ips.length];
 				const result = geoIp.lookup(ip);
-				expect(result === null || typeof result === 'object').toBe(true);
+				assert.equal(result === null || typeof result === 'object', true);
 			}
 		});
 
@@ -87,7 +88,7 @@ describe('Performance Tests', () => {
 			const iterations = 5000;
 
 			for (let i = 0; i < iterations; i++) {
-				expect(geoIp.lookup('192.168.1.' + (i % 255))).toBeNull();
+				assert.equal(geoIp.lookup('192.168.1.' + (i % 255)), null);
 			}
 		});
 	});
@@ -102,10 +103,10 @@ describe('Performance Tests', () => {
 				results.push(result);
 			}
 
-			expect(results.length).toBe(255);
+			assert.equal(results.length, 255);
 			const countries = results.filter(r => r !== null).map(r => r.country);
 			const uniqueCountries = [...new Set(countries)];
-			expect(uniqueCountries.length).toBeGreaterThan(0);
+			assert.ok(uniqueCountries.length > 0);
 		});
 	});
 
@@ -119,7 +120,7 @@ describe('Performance Tests', () => {
 				if (result !== null) successCount++;
 			}
 
-			expect(successCount).toBe(iterations);
+			assert.equal(successCount, iterations);
 		});
 
 		it('should handle invalid inputs consistently', () => {
@@ -128,10 +129,10 @@ describe('Performance Tests', () => {
 
 			for (let i = 0; i < 1000; i++) {
 				for (const input of throwInputs) {
-					expect(() => geoIp.lookup(input)).toThrow(TypeError);
+					assert.throws(() => geoIp.lookup(input), TypeError);
 				}
 				for (const input of nullInputs) {
-					expect(geoIp.lookup(input)).toBeNull();
+					assert.equal(geoIp.lookup(input), null);
 				}
 			}
 		});
