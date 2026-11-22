@@ -1,10 +1,8 @@
 <div align="center">
-    <a href="https://cdn.sefinek.net/images/npm/geoip-lite2/banner.png" target="_blank" title="Full screen">
-        <img src="https://cdn.sefinek.net/images/npm/geoip-lite2/banner.png" alt="geoip-lite2 banner">
-    </a>
+    <img src="https://cdn.sefinek.net/images/npm/geoip-lite2/banner.png" alt="geoip-lite2 banner">
     <br>
     <p>
-        A native <a href="https://nodejs.org" target="_blank" title="Open nodejs.org">Node.js</a> API for GeoLite data from MaxMind.<br>
+        A <a href="https://nodejs.org" target="_blank" title="Open nodejs.org">Node.js</a> library for IP address geolocation using MaxMind's GeoLite data.<br>
         This library includes GeoLite data created by MaxMind, available from <a href="https://www.maxmind.com" target="_blank" title="Open www.maxmind.com">maxmind.com</a>.
     </p>
     <a href="https://www.npmjs.com/package/geoip-lite2" target="_blank"><img src="https://img.shields.io/npm/dt/geoip-lite2?maxAge=3600" alt="Number of downloads"></a>
@@ -15,20 +13,16 @@
 </div>
 
 
-# 🚀 Improved GeoIP Module by [Sefinek](https://sefinek.net)
-Actively maintained and optimized fork of [geoip-lite](https://github.com/geoip-lite/node-geoip), originally created by [Philip Tellis](AUTHORS).
-Fully native JS implementation with synchronous, in-memory lookups for IPv4 and IPv6.
-Includes automated test coverage using the built-in Node.js test runner.
+# 🚀 GeoIP-Lite2 - Fast IP Address Geolocation
+An actively maintained and optimized fork of [geoip-lite](https://github.com/geoip-lite/node-geoip). See the [list of authors](AUTHORS).
+Written entirely in JavaScript, with synchronous, in-memory lookups for IPv4 and IPv6 addresses.
 
 > [!WARNING]
-> Remember to regularly update the MaxMind database! You will need a license key for this.
+> Remember to update the MaxMind database regularly! You will need a license key for this.
 
-> [!NOTE]
-> This requires a large amount of RAM. It is known to fail on a Digital Ocean or AWS micro instance.
-> This behavior is intentional, as the library prioritizes performance by keeping all data in memory.
-
-> [!NOTE]
-> IPv6 geolocation data may be less complete depending on the version of the GeoLite database.
+### Limitations
+The library loads geolocation data into memory. In a local measurement, the Node.js process used approximately 233 MB of RAM (`rss`) after loading the library with the repository's data files.
+This is an example measurement, not a fixed memory limit. The availability of information about IPv4 and IPv6 addresses depends on the contents of the database in use.
 
 
 ## 🛠️ Installation
@@ -60,11 +54,11 @@ console.log(geoIp.lookup(ip));
 ```json
 {
   "country": "PL",
-  "region": "32",
+  "region": "22",
   "isEu": true,
   "timezone": "Europe/Warsaw",
-  "city": "Szczecin",
-  "ll": [ 53.4118, 14.5339 ],
+  "city": "Gdynia",
+  "ll": [ 54.5295, 18.4488 ],
   "metro": 0,
   "area": 200
 }
@@ -204,7 +198,7 @@ The library may occasionally take up to 5 seconds to load into memory.
 This largely depends on disk load. It can take as little as 200 ms on a lightly loaded disk. This is a one-time cost.
 
 ### Memory usage
-The library uses approximately 180–230 MB of RAM per process, depending on the database version and environment.
+A local measurement after loading the library with the repository's data files reported approximately 233 MB of process memory (`rss`). Actual usage depends on the database version and environment.
 
 ```js
 require('geoip-lite2');
@@ -213,13 +207,21 @@ console.log(process.memoryUsage());
 /**
  * Output:
  * {
- *   rss: 234938368,
- *   heapTotal: 7376896,
- *   heapUsed: 4486592,
- *   external: 189088547,
- *   arrayBuffers: 187514427
+ *   rss: 233492480,
+ *   heapTotal: 6688768,
+ *   heapUsed: 4811448,
+ *   external: 198632582,
+ *   arrayBuffers: 196483831
  * }
  */
+```
+
+
+## Development
+Automated tests use the built-in Node.js test runner:
+
+```shell
+npm test
 ```
 
 
